@@ -3,6 +3,8 @@
 Entrypoint CLI según Guía Maestra CLI.
 """
 
+import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
@@ -172,6 +174,40 @@ def config() -> None:
         show_info("Saliendo sin guardar cambios.")
 
 
+def check_for_updates() -> None:
+    """Realiza un git pull y reinicia la aplicación si hay cambios."""
+    clear_screen()
+    show_header("Actualización de la Aplicación", icon="🔄")
+    show_info("Buscando actualizaciones en el repositorio remoto...")
+
+    try:
+        result = subprocess.run(
+            ["git", "pull"],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=str(Path(__file__).parent)
+        )
+        
+        output = result.stdout.strip()
+        console.print(f"[dim]{output}[/dim]")
+
+        if "Already up to date." in output or "Ya está actualizado." in output:
+            show_success("La aplicación ya está en la última versión.")
+        else:
+            show_warning("¡La aplicación se ha actualizado! Reiniciando automáticamente...")
+            
+            # Limpiamos y recreamos el proceso desde 0 usando el interprete actual (venv)
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+            
+    except subprocess.CalledProcessError as exc:
+        show_error(f"Error al actualizar desde git: {exc.stderr}")
+    except FileNotFoundError:
+        show_error("Comando 'git' no encontrado en el sistema.")
+    except Exception as exc:
+        show_error(f"Error inesperado al intentar actualizar: {exc}")
+
+
 @app.callback(invoke_without_command=True)
 def main_callback(ctx: typer.Context) -> None:
     """Media Tools CLI profesional."""
@@ -194,6 +230,7 @@ def _interactive_main_menu() -> None:
                 questionary.Choice("🩺 Diagnóstico (doctor)", value="doctor"),
                 questionary.Choice("⚙️ Configuración (config)", value="config"),
                 questionary.Choice("📖 Documentación (docs)", value="docs"),
+                questionary.Choice("🔄 Actualizar App (update)", value="update"),
                 questionary.Choice("❌ Salir", value="exit"),
             ]
         ).ask()
@@ -215,6 +252,9 @@ def _interactive_main_menu() -> None:
             pause()
         elif choice == "docs":
             docs()
+            pause()
+        elif choice == "update":
+            check_for_updates()
             pause()
         else:
             show_info("¡Hasta la próxima!")
