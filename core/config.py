@@ -21,6 +21,19 @@ CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
 
+def update_config(key: str, value: str, config_file: Path = CONFIG_FILE) -> None:
+    """Actualiza una clave en el archivo de configuración y lo guarda."""
+    config_data = _read_config_file(config_file)
+    config_data[key] = value
+    try:
+        with config_file.open("w", encoding="utf-8") as handler:
+            json.dump(config_data, handler, indent=4, ensure_ascii=False)
+    except OSError as exc:
+        message = f"No se pudo guardar la configuración en '{config_file}': {exc}"
+        logger.error(message)
+        raise ConfigurationError(message) from exc
+
+
 def _write_default_config(config_file: Path) -> dict:
     """Crea el archivo de configuración con los valores por defecto."""
     default_config = {

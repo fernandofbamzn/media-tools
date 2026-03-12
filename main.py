@@ -4,17 +4,27 @@ Entrypoint CLI según Guía Maestra CLI.
 """
 
 import sys
+from pathlib import Path
 from typing import Optional
 
+import questionary
 import typer
 from rich.console import Console
 
-from core.config import load_media_root
+from core.config import CONFIG_FILE, load_media_root, update_config
 from core.dependency_check import check_and_install
 from core.exceptions import ConfigurationError, MediaToolsError
 from models.schemas import BrowseResult
 from services.business_logic import MediaToolsService
-from ui.components import render_audit_summary, render_browse_result, render_doctor_result
+from ui.components import (
+    render_audit_summary,
+    render_browse_result,
+    render_doctor_result,
+    show_header,
+    show_info,
+    show_success,
+    show_warning,
+)
 from ui.doc_viewer import show_docs
 from ui.menus import BrowserMenu
 
@@ -61,6 +71,42 @@ def audit() -> None:
 def docs() -> None:
     """Abrir documentación integrada."""
     show_docs()
+
+
+@app.command()
+def config() -> None:
+    """Abre el editor de configuración interactivo."""
+    show_header("Configuración de Media Tools", "Inicio > Configuración")
+
+    current_root = load_media_root()
+    show_info(f"Raíz multimedia actual: {current_root}")
+    show_info(f"Archivo de configuración: {CONFIG_FILE}")
+
+    action = questionary.select(
+        "¿Qué deseas hacer?",
+        choices=[
+            "Modificar raíz multimedia (media_root)",
+            "Salir"
+        ]
+    ).ask()
+
+    if action == "Modificar raíz multimedia (media_root)":
+        new_path_str = questionary.path(
+            "Introduce la nueva ruta para la biblioteca:",
+            default=str(current_root)
+        ).ask()
+
+        if new_path_str:
+            new_path = Path(new_path_str).expanduser().resolve()
+            if not new_path.exists():
+                show_warning(f"La ruta '{new_path}' no existe. Se guardará de todos modos.")
+
+            update_config("media_root", str(new_path))
+            show_success(f"La raíz multimedia se ha actualizado correctamente a: {new_path}")
+        else:
+            show_warning("Operación cancelada.")
+    else:
+        show_info("Saliendo sin guardar cambios.")
 
 
 def main() -> None:
