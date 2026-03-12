@@ -17,6 +17,8 @@ from core.exceptions import ConfigurationError, MediaToolsError
 from models.schemas import BrowseResult
 from services.business_logic import MediaToolsService
 from ui.components import (
+    clear_screen,
+    pause,
     render_audit_summary,
     render_browse_result,
     render_doctor_result,
@@ -84,7 +86,8 @@ def docs() -> None:
 @app.command()
 def config() -> None:
     """Abre el editor de configuración interactivo."""
-    show_header("Configuración de Media Tools", "Inicio > Configuración")
+    clear_screen()
+    show_header("Configuración de Media Tools", "Inicio > Configuración", icon="⚙️")
 
     current_root = load_media_root()
     show_info(f"Raíz multimedia actual: {current_root}")
@@ -126,31 +129,37 @@ def main_callback(ctx: typer.Context) -> None:
 
 def _interactive_main_menu() -> None:
     """Menú interactivo principal cuando no se proveen comandos."""
-    show_header("Media Tools", "Inicio")
-
     while True:
+        clear_screen()
+        show_header("Media Tools", "Inicio", icon="⚡")
+
         choice = questionary.select(
             "Selecciona una opción:",
             choices=[
-                questionary.Choice("Navegar Biblioteca (browse)", value="browse"),
-                questionary.Choice("Auditoría (audit)", value="audit"),
-                questionary.Choice("Diagnóstico (doctor)", value="doctor"),
-                questionary.Choice("Configuración (config)", value="config"),
-                questionary.Choice("Documentación (docs)", value="docs"),
-                questionary.Choice("Salir", value="exit"),
+                questionary.Choice("🎬 Navegar Biblioteca (browse)", value="browse"),
+                questionary.Choice("🔍 Auditoría (audit)", value="audit"),
+                questionary.Choice("🩺 Diagnóstico (doctor)", value="doctor"),
+                questionary.Choice("⚙️ Configuración (config)", value="config"),
+                questionary.Choice("📖 Documentación (docs)", value="docs"),
+                questionary.Choice("❌ Salir", value="exit"),
             ]
         ).ask()
 
         if choice == "browse":
             browse(None)
+            pause()
         elif choice == "audit":
             audit(None)
+            pause()
         elif choice == "doctor":
             doctor()
+            pause()
         elif choice == "config":
             config()
+            pause()
         elif choice == "docs":
             docs()
+            pause()
         else:
             show_info("¡Hasta la próxima!")
             break

@@ -15,11 +15,26 @@ from ui.theme import APP_THEME
 console = Console(theme=APP_THEME)
 
 
-def show_header(title: str, breadcrumb: str = "") -> None:
-    """Renderiza encabezado principal con breadcrumb."""
+def clear_screen() -> None:
+    """Limpia la terminal."""
+    console.clear()
+
+
+def pause() -> None:
+    """Pausa la ejecución hasta que el usuario pulse Enter."""
+    console.print()
+    console.print("[dim]Pulsar Enter para continuar...[/dim]", end="")
+    input()
+    console.print()
+
+
+def show_header(title: str, breadcrumb: str = "", icon: str = "") -> None:
+    """Renderiza encabezado principal con breadcrumb e icono opcional."""
     if breadcrumb:
-        console.print(f"[breadcrumb]{breadcrumb}[/breadcrumb]")
-    console.print(Panel(f"[header]{title}[/header]", border_style="cyan"))
+        console.print(f"[breadcrumb]📍 {breadcrumb}[/breadcrumb]")
+    
+    title_text = f"{icon} {title}" if icon else title
+    console.print(Panel(f"[header]{title_text}[/header]", border_style="cyan", padding=(1, 2), expand=False))
 
 
 def show_info(text: str) -> None:
@@ -44,9 +59,9 @@ def show_error(text: str) -> None:
 
 def dict_table(title: str, values: Dict[str, int], key_label: str, value_label: str) -> Table:
     """Construye una tabla Rich a partir de un diccionario."""
-    table = Table(title=title, show_lines=False)
-    table.add_column(key_label, style="cyan")
-    table.add_column(value_label, justify="right", style="green")
+    table = Table(title=f"📊 [bold]{title}[/bold]", show_lines=True, header_style="bold cyan", expand=True)
+    table.add_column(key_label, style="cyan", justify="left")
+    table.add_column(value_label, justify="right", style="green", width=15)
 
     for key, value in sorted(values.items(), key=lambda x: (-x[1], x[0])):
         table.add_row(str(key), str(value))
@@ -56,7 +71,8 @@ def dict_table(title: str, values: Dict[str, int], key_label: str, value_label: 
 
 def render_doctor_result(result: DoctorResult) -> None:
     """Renderiza el diagnóstico de sistema."""
-    show_header("Media Tools Doctor", "Inicio > Doctor")
+    clear_screen()
+    show_header("Media Tools Doctor", "Inicio > Doctor", icon="🩺")
     for check in result.checks:
         if check.available:
             show_success(f"{check.name} encontrado")
@@ -71,7 +87,8 @@ def render_doctor_result(result: DoctorResult) -> None:
 
 def render_browse_result(result: BrowseResult | None) -> None:
     """Renderiza el resultado de navegación."""
-    show_header("Navegador de Biblioteca", "Inicio > Navegación")
+    clear_screen()
+    show_header("Navegador de Biblioteca", "Inicio > Navegación", icon="📁")
     if result is None:
         show_warning("Navegación cancelada.")
         return
@@ -81,7 +98,8 @@ def render_browse_result(result: BrowseResult | None) -> None:
 
 def render_audit_summary(summary: AuditSummary) -> None:
     """Renderiza resumen de auditoría."""
-    show_header("Auditoría de Biblioteca", "Inicio > Auditoría")
+    clear_screen()
+    show_header("Auditoría de Biblioteca", "Inicio > Auditoría", icon="🔍")
 
     if summary.cancelled:
         show_warning("Auditoría cancelada.")
@@ -128,7 +146,8 @@ def render_audit_summary(summary: AuditSummary) -> None:
         console.print()
 
     # Resumen general (Métricas)
-    show_header("Resumen Global")
+    console.print()
+    show_header("Resumen Global", icon="📈")
     console.print(dict_table("Idiomas de audio", summary.report.audio_languages, "Idioma", "Pistas"))
     console.print(
         dict_table("Idiomas de subtítulos", summary.report.subtitle_languages, "Idioma", "Pistas")
