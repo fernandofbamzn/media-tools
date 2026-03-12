@@ -30,3 +30,7 @@ class ConfigurationError(MediaToolsError):
 # Alias de compatibilidad hacia atrás.
 PermissionError = MediaPermissionError
 BinaryMissing = BinaryMissingError
+
+class DependencyInstallationError(MediaToolsError):
+    """Fallo al instalar dependencias de Python mediante pip."""
+
