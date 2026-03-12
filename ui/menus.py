@@ -4,7 +4,7 @@ Menús interactivos con Questionary.
 
 import logging
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 import questionary
 from questionary import Choice
@@ -13,6 +13,8 @@ from models.schemas import BrowseResult
 
 
 VIDEO_EXTENSIONS = {".mkv", ".mp4", ".m4v"}
+MenuAction = Literal["select_dir", "up", "enter", "select_file", "cancel"]
+MenuSelection = Tuple[MenuAction, Optional[Path]]
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ class BaseMenu:
         self,
         message: str,
         choices: List[Choice],
-    ) -> Optional[str]:
+    ) -> Optional[MenuSelection]:
         """Lanza un selector interactivo con flechas."""
         return questionary.select(
             message,
@@ -103,28 +105,28 @@ class BrowserMenu(BaseMenu):
 
             choices.append(Choice(title="❌ Cancelar", value=("cancel", None)))
 
-            result = self.ask_select(
+            selection: Optional[MenuSelection] = self.ask_select(
                 message=f"Navegación > {breadcrumb}",
                 choices=choices,
             )
 
-            if result is None:
+            if selection is None:
                 return None
 
-            action, path = result
+            action, selected_path = selection
 
-            if action == "select_dir":
-                return BrowseResult(selected_path=path, selection_type="directory")
+            if action == "select_dir" and selected_path is not None:
+                return BrowseResult(selected_path=selected_path, selection_type="directory")
 
-            if action == "select_file":
-                return BrowseResult(selected_path=path, selection_type="file")
+            if action == "select_file" and selected_path is not None:
+                return BrowseResult(selected_path=selected_path, selection_type="file")
 
-            if action == "up":
-                current = path
+            if action == "up" and selected_path is not None:
+                current = selected_path
                 continue
 
-            if action == "enter":
-                current = path
+            if action == "enter" and selected_path is not None:
+                current = selected_path
                 continue
 
             if action == "cancel":
