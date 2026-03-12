@@ -17,3 +17,8 @@ class BinaryMissing(MediaToolsError):
 
 class ConfigurationError(MediaToolsError):
     """Error de configuración inválida."""
+
+
+class DependencyInstallationError(MediaToolsError):
+    """Fallo al instalar dependencias de Python mediante pip."""
+
