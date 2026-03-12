@@ -1,4 +1,4 @@
-#!/opt/media-tools/.venv/bin/python
+"""#!/opt/media-tools/.venv/bin/python"""
 """
 Entrypoint CLI según Guía Maestra CLI.
 """

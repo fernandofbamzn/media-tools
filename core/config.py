@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 APP_NAME = "media-tools"
 ENV_MEDIA_ROOT = "MEDIA_TOOLS_MEDIA_ROOT"
-DEFAULT_MEDIA_ROOT = Path("/mnt/Filmoteca")
+DEFAULT_MEDIA_ROOT = Path.cwd()
 
 XDG_CONFIG = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config"))
 CONFIG_DIR = XDG_CONFIG / APP_NAME
@@ -21,11 +21,25 @@ CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
 
+def _write_default_config(config_file: Path) -> dict:
+    """Crea el archivo de configuración con los valores por defecto."""
+    default_config = {
+        "media_root": str(DEFAULT_MEDIA_ROOT.resolve())
+    }
+    try:
+        with config_file.open("w", encoding="utf-8") as handler:
+            json.dump(default_config, handler, indent=4, ensure_ascii=False)
+        return default_config
+    except OSError as exc:
+        logger.warning("No se pudo crear el archivo de configuración por defecto '%s': %s", config_file, exc)
+        return {}
+
+
 def _read_config_file(config_file: Path = CONFIG_FILE) -> dict:
-    """Lee `config.json`; retorna diccionario vacío si no existe."""
+    """Lee `config.json`; si no existe, lo crea con valores por defecto."""
     try:
         if not config_file.exists():
-            return {}
+            return _write_default_config(config_file)
         with config_file.open("r", encoding="utf-8") as handler:
             return json.load(handler)
     except json.JSONDecodeError as exc:
@@ -87,8 +101,8 @@ def load_media_root(config_file: Path = CONFIG_FILE) -> Path:
                     f"Configuración inválida para media_root. {exc} "
                     f"Además, el fallback '{DEFAULT_MEDIA_ROOT}' también es inválido: {fallback_exc}"
                 )
-                logger.error(message)
-                raise ConfigurationError(message) from fallback_exc
+                logger.warning(message)
+                return DEFAULT_MEDIA_ROOT
 
     try:
         return _validate_media_root(
@@ -98,5 +112,5 @@ def load_media_root(config_file: Path = CONFIG_FILE) -> Path:
         message = (
             f"No se configuró media_root y el fallback '{DEFAULT_MEDIA_ROOT}' no es válido: {exc}"
         )
-        logger.error(message)
-        raise ConfigurationError(message) from exc
+        logger.warning(message)
+        return DEFAULT_MEDIA_ROOT
