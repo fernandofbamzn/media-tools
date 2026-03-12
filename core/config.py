@@ -1,141 +1,40 @@
-"""Configuración central de la aplicación."""
+"""
+Configuración específica de media-tools.
+Delega todo el CRUD al ConfigManager de clibaseapp.
+Solo define helpers de acceso a claves propias de la app.
+"""
 
-import json
-import logging
-import os
 from pathlib import Path
+from typing import List
 
-from core.exceptions import ConfigurationError
-
-logger = logging.getLogger(__name__)
-
-APP_NAME = "media-tools"
-ENV_MEDIA_ROOT = "MEDIA_TOOLS_MEDIA_ROOT"
-DEFAULT_MEDIA_ROOT = Path.cwd()
-
-XDG_CONFIG = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config"))
-CONFIG_DIR = XDG_CONFIG / APP_NAME
-
-CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-
-CONFIG_FILE = CONFIG_DIR / "config.json"
+from clibaseapp import ConfigManager
 
 
-def update_config(key: str, value: str, config_file: Path = CONFIG_FILE) -> None:
-    """Actualiza una clave en el archivo de configuración y lo guarda."""
-    config_data = _read_config_file(config_file)
-    config_data[key] = value
-    try:
-        with config_file.open("w", encoding="utf-8") as handler:
-            json.dump(config_data, handler, indent=4, ensure_ascii=False)
-    except OSError as exc:
-        message = f"No se pudo guardar la configuración en '{config_file}': {exc}"
-        logger.error(message)
-        raise ConfigurationError(message) from exc
+# Singleton del config manager de esta app
+_config = ConfigManager(
+    app_name="media-tools",
+    default_config={
+        "media_root": str(Path.cwd().resolve()),
+        "keep_languages": ["spa", "eng", "es", "en"],
+    },
+)
 
 
-def _write_default_config(config_file: Path) -> dict:
-    """Crea el archivo de configuración con los valores por defecto."""
-    default_config = {
-        "media_root": str(DEFAULT_MEDIA_ROOT.resolve()),
-        "keep_languages": ["spa", "eng", "es", "en"]
-    }
-    try:
-        with config_file.open("w", encoding="utf-8") as handler:
-            json.dump(default_config, handler, indent=4, ensure_ascii=False)
-        return default_config
-    except OSError as exc:
-        logger.warning("No se pudo crear el archivo de configuración por defecto '%s': %s", config_file, exc)
-        return {}
+def get_config() -> ConfigManager:
+    """Devuelve el gestor de configuración de media-tools."""
+    return _config
 
 
-def _read_config_file(config_file: Path = CONFIG_FILE) -> dict:
-    """Lee `config.json`; si no existe, lo crea con valores por defecto."""
-    try:
-        if not config_file.exists():
-            return _write_default_config(config_file)
-        with config_file.open("r", encoding="utf-8") as handler:
-            return json.load(handler)
-    except json.JSONDecodeError as exc:
-        message = (
-            f"El archivo de configuración '{config_file}' no contiene JSON válido. "
-            "Corrige el formato o elimina el archivo para regenerarlo."
-        )
-        logger.error(message)
-        raise ConfigurationError(message) from exc
-    except OSError as exc:
-        message = f"No se pudo leer el archivo de configuración '{config_file}': {exc}"
-        logger.error(message)
-        raise ConfigurationError(message) from exc
+def load_media_root() -> Path:
+    """Carga media_root desde env → config → cwd."""
+    return _config.load_path("media_root", env_var="MEDIA_TOOLS_MEDIA_ROOT")
 
 
-def _validate_media_root(path: Path, source: str) -> Path:
-    """Valida existencia y permisos de lectura de la ruta de biblioteca."""
-    resolved_path = path.expanduser()
-
-    if not resolved_path.exists():
-        raise ConfigurationError(
-            f"La ruta '{resolved_path}' definida en {source} no existe."
-        )
-
-    if not resolved_path.is_dir():
-        raise ConfigurationError(
-            f"La ruta '{resolved_path}' definida en {source} no es un directorio."
-        )
-
-    if not os.access(resolved_path, os.R_OK):
-        raise ConfigurationError(
-            f"La ruta '{resolved_path}' definida en {source} no tiene permisos de lectura."
-        )
-
-    return resolved_path
-
-
-def load_media_root(config_file: Path = CONFIG_FILE) -> Path:
-    """Carga `media_root` desde entorno/config con fallback explícito y validación."""
-    configured_root = os.getenv(ENV_MEDIA_ROOT)
-    source = f"variable de entorno {ENV_MEDIA_ROOT}"
-
-    if configured_root is None:
-        config_data = _read_config_file(config_file)
-        configured_root = config_data.get("media_root")
-        source = f"archivo de configuración {config_file}"
-
-    if configured_root:
-        try:
-            return _validate_media_root(Path(configured_root), source)
-        except ConfigurationError as exc:
-            fallback_source = f"fallback por defecto {DEFAULT_MEDIA_ROOT}"
-            try:
-                fallback_path = _validate_media_root(DEFAULT_MEDIA_ROOT, fallback_source)
-                logger.warning("%s Se utiliza fallback '%s'.", exc, fallback_path)
-                return fallback_path
-            except ConfigurationError as fallback_exc:
-                message = (
-                    f"Configuración inválida para media_root. {exc} "
-                    f"Además, el fallback '{DEFAULT_MEDIA_ROOT}' también es inválido: {fallback_exc}"
-                )
-                logger.warning(message)
-                return DEFAULT_MEDIA_ROOT
-
-    try:
-        return _validate_media_root(
-            DEFAULT_MEDIA_ROOT, f"fallback por defecto {DEFAULT_MEDIA_ROOT}"
-        )
-    except ConfigurationError as exc:
-        message = (
-            f"No se configuró media_root y el fallback '{DEFAULT_MEDIA_ROOT}' no es válido: {exc}"
-        )
-        logger.warning(message)
-        return DEFAULT_MEDIA_ROOT
-
-
-def load_keep_languages(config_file: Path = CONFIG_FILE) -> list[str]:
-    """Carga los idiomas a mantener por defecto desde la configuración."""
-    config_data = _read_config_file(config_file)
-    if "keep_languages" not in config_data:
-        default_langs = ["spa", "eng", "es", "en"]
-        update_config("keep_languages", default_langs, config_file)
-        return default_langs
-    
-    return config_data["keep_languages"]
+def load_keep_languages() -> List[str]:
+    """Carga los idiomas a mantener por defecto."""
+    langs = _config.get("keep_languages")
+    if langs is None:
+        default = ["spa", "eng", "es", "en"]
+        _config.update("keep_languages", default)
+        return default
+    return langs

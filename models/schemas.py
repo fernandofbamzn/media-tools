@@ -1,5 +1,6 @@
 """
-Modelos de datos de la aplicación.
+Modelos de datos específicos de media-tools.
+Los modelos genéricos (BrowseResult, DoctorCheck, DoctorResult) vienen de clibaseapp.
 """
 
 from dataclasses import dataclass, field
@@ -11,7 +12,6 @@ from typing import Dict, List, Optional
 @dataclass
 class Track:
     """Representa una pista multimedia."""
-
     id: int
     codec: str
     language: str
@@ -25,7 +25,6 @@ class Track:
 @dataclass
 class MediaFile:
     """Representa un archivo multimedia analizado."""
-
     path: Path
     container: str
     tracks: List[Track] = field(default_factory=list)
@@ -44,17 +43,8 @@ class MediaFile:
 
 
 @dataclass
-class BrowseResult:
-    """Resultado de navegación del usuario."""
-
-    selected_path: Path
-    selection_type: str  # file | directory
-
-
-@dataclass
 class AuditReport:
-    """Resultado agregado de auditoría."""
-
+    """Resultado agregado de auditoría multimedia."""
     total_files: int
     audio_languages: Dict[str, int]
     subtitle_languages: Dict[str, int]
@@ -64,6 +54,16 @@ class AuditReport:
     files_without_spanish_audio: int
     files_with_duplicate_candidate_audio: int
     detailed_files: List[MediaFile] = field(default_factory=list)
+
+
+@dataclass
+class AuditSummary:
+    """Resultado de ejecución de auditoría para capa de presentación."""
+    cancelled: bool
+    selected_path: Optional[Path]
+    selection_type: Optional[str]
+    scanned_files: int
+    report: Optional[AuditReport]
 
 
 class ActionType(Enum):
@@ -94,31 +94,3 @@ class CleanPlan:
     @property
     def tracks_to_remove(self) -> List[TrackAction]:
         return [t for t in self.track_actions if t.action == ActionType.REMOVE]
-
-
-@dataclass
-class DoctorCheck:
-    """Estado de una dependencia del sistema."""
-
-    name: str
-    available: bool
-
-
-@dataclass
-class DoctorResult:
-    """Resultado del diagnóstico del sistema."""
-
-    checks: List[DoctorCheck]
-    media_root: Path
-    media_root_exists: bool
-
-
-@dataclass
-class AuditSummary:
-    """Resultado de ejecución de auditoría para capa de presentación."""
-
-    cancelled: bool
-    selected_path: Optional[Path]
-    selection_type: Optional[str]
-    scanned_files: int
-    report: Optional[AuditReport]
