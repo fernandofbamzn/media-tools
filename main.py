@@ -12,6 +12,7 @@ from typing import Optional
 import questionary
 import typer
 from rich.console import Console
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from core.config import CONFIG_FILE, load_keep_languages, load_media_root, update_config
 from core.dependency_check import check_and_install
@@ -86,6 +87,15 @@ def docs() -> None:
     show_docs()
 
 
+def _format_bytes(size: int) -> str:
+    """Da formato a los bytes extraídos en humano legible (KB, MB, GB)."""
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size < 1024.0:
+            return f"{size:3.1f} {unit}"
+        size /= 1024.0
+    return f"{size:.1f} PB"
+
+
 @app.command()
 def clean(target: Optional[Path] = typer.Argument(None, help="Ruta a limpiar (opcional, interactivo si se omite)")) -> None:
     """Planifica y limpia pistas de audio o subtítulos no deseadas."""
@@ -122,14 +132,65 @@ def clean(target: Optional[Path] = typer.Argument(None, help="Ruta a limpiar (op
 
     clear_screen()
     show_header("Resumen del Plan de Limpieza", "Inicio > Limpieza > Resumen", icon="📝")
+    total_to_remove = 0
+    plans_to_execute = []
+
     for p in final_plans:
         to_keep = sum(1 for a in p.track_actions if a.action == ActionType.KEEP)
         to_remove = sum(1 for a in p.track_actions if a.action == ActionType.REMOVE)
+        
         show_info(f"🎬 {p.media_file.path.name}")
         console.print(f"   [green]+ Conservar: {to_keep} pistas[/green] | [red]- Eliminar: {to_remove} pistas[/red]")
         console.print()
 
-    show_success("Planificación confirmada. (Nota: Ejecución real pendiente de implementar).")
+        if to_remove > 0:
+            total_to_remove += to_remove
+            plans_to_execute.append(p)
+
+    if not plans_to_execute:
+        show_success("Planificación completada: Los archivos ya cumplen con la selección actual. No hay pistas que borrar.")
+        return
+
+    console.print(f"[bold red]ATENCIÓN:[/] Se van a eliminar un total de [bold]{total_to_remove}[/] pistas en {len(plans_to_execute)} archivos.")
+    do_execute = questionary.confirm("¿Deseas aplicar estos cambios y LIMPIAR los archivos?\n(Esta acción es destructiva sobre las pistas eliminadas)").ask()
+
+    if not do_execute:
+        show_warning("Ejecución cancelada por el usuario. No se ha modificado ningún archivo.")
+        return
+
+    total_saved = 0
+    errors = 0
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TimeElapsedColumn(),
+        console=console,
+    ) as progress:
+        task_id = progress.add_task("Limpiando archivos...", total=len(plans_to_execute))
+
+        for plan in plans_to_execute:
+            progress.update(task_id, description=f"Limpiando: {plan.media_file.path.name}...")
+            try:
+                saved = service.execute_clean_plan(plan)
+                total_saved += saved
+            except Exception as e:
+                errors += 1
+                progress.console.print(f"[red]Error procesando {plan.media_file.path.name}: {e}[/]")
+            progress.advance(task_id)
+
+    clear_screen()
+    show_header("✨ Limpieza Completada ✨", icon="🎉")
+    
+    msg = f"Archivos procesados: {len(plans_to_execute) - errors}/{len(plans_to_execute)}\n"
+    msg += f"Espacio recuperado: {_format_bytes(total_saved)}"
+    
+    if errors == 0:
+        show_success(msg)
+    else:
+        show_warning(f"{msg}\nHubo {errors} archivos con errores.")
 
 
 @app.command()

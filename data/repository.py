@@ -14,7 +14,7 @@ from core.exceptions import (
     InvalidMediaMetadataError,
     MediaPermissionError,
 )
-from models.schemas import MediaFile, Track
+from models.schemas import ActionType, CleanPlan, MediaFile, Track
 
 
 logger = logging.getLogger(__name__)
@@ -123,3 +123,53 @@ class MediaRepository:
             ) from exc
 
         return analyzed
+
+    def execute_remux(self, plan: CleanPlan) -> None:
+        """Remuxea un archivo para eliminar las pistas marcadas para borrado."""
+        input_path = plan.media_file.path
+        temp_path = input_path.with_name(f"{input_path.stem}_tmp{input_path.suffix}")
+
+        kept_audios = [a.track.id for a in plan.tracks_to_keep if a.track.type == "audio"]
+        kept_subs = [a.track.id for a in plan.tracks_to_keep if a.track.type == "subtitles"]
+
+        cmd = ["mkvmerge", "-o", str(temp_path)]
+
+        if kept_audios:
+            cmd.extend(["--audio-tracks", ",".join(map(str, kept_audios))])
+        else:
+            cmd.append("--no-audio")
+
+        if kept_subs:
+            cmd.extend(["--subtitle-tracks", ",".join(map(str, kept_subs))])
+        else:
+            cmd.append("--no-subtitles")
+
+        cmd.append(str(input_path))
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+        except FileNotFoundError as exc:
+            logger.exception("Binario mkvmerge no encontrado al ejecutar limpieza: %s", input_path)
+            raise BinaryMissingError("No se encontró 'mkvmerge'.") from exc
+        except subprocess.CalledProcessError as exc:
+            if temp_path.exists():
+                temp_path.unlink()
+            stderr = (exc.stderr or "").strip()
+            stdout = (exc.stdout or "").strip()
+            logger.error("Error al ejecutar mkvmerge: código %s\nStdout: %s\nStderr: %s", exc.returncode, stdout, stderr)
+            raise ExternalToolExecutionError(f"Error al limpiar '{input_path.name}'. {stderr}") from exc
+
+        # Si todo fue bien, reemplazar archivo original
+        try:
+            input_path.unlink()
+            temp_path.rename(input_path)
+        except OSError as exc:
+            # Intentar limpiar temporal
+            if temp_path.exists():
+                temp_path.unlink()
+            raise MediaPermissionError(f"Fallo de permisos al sobreescribir '{input_path.name}'.") from exc

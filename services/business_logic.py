@@ -110,3 +110,25 @@ class MediaToolsService:
         except Exception:
             logger.exception("Error planificando la limpieza")
             raise
+
+    def execute_clean_plan(self, plan: CleanPlan) -> int:
+        """Ejecuta un plan de limpieza y devuelve los bytes ahorrados."""
+        try:
+            target_file = plan.media_file.path
+            to_remove = [a for a in plan.track_actions if a.action.value == "remove"]
+
+            if not to_remove:
+                # No hay que hacer nada
+                return 0
+
+            initial_size = target_file.stat().st_size
+            
+            self.repo.execute_remux(plan)
+            
+            final_size = target_file.stat().st_size
+            saved_bytes = max(0, initial_size - final_size)
+            
+            return saved_bytes
+        except Exception:
+            logger.exception("Error ejecutando remux para %s", plan.media_file.path)
+            raise

@@ -39,7 +39,7 @@ Incluye:
 - resolución o aviso en caso de pistas conflictivas o duplicadas
 - informe de las acciones tomadas y ahorro de espacio en el archivo final
 
-**Estado**: en progreso.
+**Estado**: completada.
 
 ## Fase 4 — Optimización de vídeo 🔭
 
