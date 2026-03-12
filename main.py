@@ -29,7 +29,7 @@ from ui.components import (
     show_success,
     show_warning,
 )
-from ui.clean_menu import ask_clean_plan
+from ui.clean_menu import ask_global_clean_plans
 from ui.doc_viewer import show_docs
 from ui.menus import BrowserMenu
 
@@ -114,16 +114,11 @@ def clean(target: Optional[Path] = typer.Argument(None, help="Ruta a limpiar (op
         show_warning("No se encontraron archivos multimedia para limpiar.")
         return
 
-    final_plans = []
-    
-    for plan in plans:
-        try:
-            confirmed_plan = ask_clean_plan(plan)
-            final_plans.append(confirmed_plan)
-            clear_screen()
-        except KeyboardInterrupt:
-            show_warning("\nProceso de planificación cancelado por el usuario.")
-            return
+    try:
+        final_plans = ask_global_clean_plans(plans)
+    except KeyboardInterrupt:
+        show_warning("\nProceso de planificación cancelado por el usuario.")
+        return
 
     clear_screen()
     show_header("Resumen del Plan de Limpieza", "Inicio > Limpieza > Resumen", icon="📝")
