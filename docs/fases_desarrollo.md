@@ -1,71 +1,66 @@
 # Fases de Desarrollo
 
-## Fase 1 — Base del proyecto
+Roadmap funcional del proyecto con alcance y estado.
 
-Objetivo: infraestructura CLI profesional
+## Fase 1 — Base del proyecto ✅
 
-Incluye:
-
-- arquitectura N-tier
-- separación de capas
-- verificación de dependencias
-- visor de documentación
-- entorno virtual
-
-Estado: COMPLETADO
-
----
-
-## Fase 2 — Navegación y auditoría
-
-Objetivo: análisis de biblioteca multimedia
+**Objetivo**: fundaciones técnicas de la CLI.
 
 Incluye:
 
-- navegador interactivo
-- auditoría de idiomas
-- análisis de códecs
+- estructura de carpetas por capas
+- comandos base y arranque
+- verificación inicial de dependencias
+- documentación técnica mínima
+
+**Estado**: completada.
+
+## Fase 2 — Navegación y auditoría 🚧
+
+**Objetivo**: inspección fiable de bibliotecas multimedia.
+
+Incluye:
+
+- navegación interactiva de rutas
+- lectura de metadata de medios
+- auditoría de idiomas y códecs
 - detección preliminar de duplicados
 
-Estado: EN PROGRESO
+**Estado**: en progreso.
 
----
+## Fase 3 — Planificación de cambios ⏳
 
-## Fase 3 — Planificador de cambios
-
-Objetivo: modificar archivos de forma segura
+**Objetivo**: preparar modificaciones seguras y revisables.
 
 Incluye:
 
-- eliminar pistas duplicadas
-- seleccionar idiomas
-- eliminar subtítulos innecesarios
+- selección de pistas a conservar/eliminar
+- filtros por idioma
 - informe previo de cambios
+- confirmación explícita antes de aplicar
 
-Estado: PENDIENTE
+**Estado**: pendiente.
 
----
+## Fase 4 — Optimización de vídeo 🔭
 
-## Fase 4 — Optimización de vídeo
-
-Objetivo: reducir tamaño de archivos
+**Objetivo**: reducción de tamaño con control de calidad.
 
 Incluye:
 
 - transcodificación opcional
-- perfiles de calidad
-- estimación de ahorro
+- perfiles configurables
+- estimación de ahorro de espacio
 
-Estado: FUTURO
+**Estado**: futuro.
 
----
+## Fase 5 — Automatización / modo headless 🔭
 
-## Fase 5 — Automatización
-
-Objetivo: modo headless para pipelines
+**Objetivo**: integración en scripts y pipelines.
 
 Incluye:
 
-- salida JSON
-- ejecución sin interacción
-- integración con scripts
+- ejecución no interactiva
+- salida estructurada (JSON)
+- códigos de salida robustos para CI/CD
+
+**Estado**: futuro.

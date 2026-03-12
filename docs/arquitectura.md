@@ -1,42 +1,83 @@
 # Arquitectura del Proyecto
 
-Este proyecto sigue la **Guía Maestra de Desarrollo CLI**.
+Documento técnico de referencia para la estructura interna de `media-tools`.
 
-## Arquitectura N-Tier
+## Vista general
 
-media-tools
-├── main.py                 # Entrypoint CLI
-├── core/                   # Configuración y errores
-├── models/                 # Modelos de datos
-├── services/               # Lógica de negocio
-├── data/                   # Acceso a datos
-├── ui/                     # Interfaz CLI
-├── docs/                   # Documentación
-└── scripts/                # Scripts auxiliares
+Arquitectura CLI modular (N-Tier):
 
-## Capas
+```text
+main.py → ui/ → services/ → data/ → models/
+               ↘ core/ (config, validaciones, errores)
+```
 
-### Entrypoint
+## Estructura
 
-main.py  
-Gestiona comandos CLI mediante Typer.
+```text
+media-tools/
+├── main.py
+├── core/
+├── models/
+├── services/
+├── data/
+├── ui/
+├── docs/
+└── scripts/
+```
 
-### UI
+## Responsabilidades por capa
 
-Renderizado visual usando Rich y Questionary.
+### `main.py`
 
-### Services
+- Registra comandos Typer.
+- Inicializa servicios y wiring.
+- Centraliza manejo global de errores.
+- Ejecuta verificaciones de dependencias al arranque.
 
-Lógica de negocio desacoplada de la interfaz.
+### `ui/`
 
-### Repository
+- Renderizado con Rich.
+- Menús e interacción con Questionary.
+- Traducción de entradas/salidas de usuario.
 
-Acceso al filesystem y análisis multimedia.
+> No contiene lógica de negocio.
 
-### Models
+### `services/`
 
-Estructuras de datos tipadas.
+- Casos de uso de negocio (auditoría, planificación, limpieza).
+- Orquestación entre modelos y repositorios.
+- Reglas de validación de dominio.
 
-### Core
+> No hace I/O de consola ni solicita input directo.
 
-Configuración del sistema y utilidades base.
+### `data/`
+
+- Adaptadores a filesystem y herramientas externas.
+- Implementaciones Repository Pattern.
+- Serialización/deserialización técnica.
+
+### `models/`
+
+- Entidades y DTOs tipados.
+- Estructuras de datos sin lógica compleja.
+
+### `core/`
+
+- Configuración central.
+- Excepciones personalizadas.
+- utilidades transversales de infraestructura.
+
+## Reglas de dependencia
+
+Dependencia permitida (sentido único):
+
+- `ui` depende de `services`
+- `services` depende de `data` y `models`
+- `data` depende de `models` y `core`
+- `main.py` coordina todo
+
+Dependencias a evitar:
+
+- `services` → `ui`
+- `models` → `ui` / `services` / `data`
+- `ui` → herramientas externas directas

@@ -1,29 +1,48 @@
-# Requisitos del Proyecto
+# Requisitos
 
-## Sistema
+Requisitos técnicos para ejecutar y desarrollar `media-tools`.
 
-- Linux (preferiblemente Debian/Ubuntu)
-- Python >= 3.10
-- mkvtoolnix
-- ffmpeg
-- mediainfo
+## Sistema operativo
 
-## Python
+- Linux (recomendado Debian/Ubuntu)
 
-Dependencias principales:
+## Runtime
 
-- rich
-- questionary
-- typer
-- pydantic
+- Python 3.10 o superior
 
-Instalación:
+## Dependencias del sistema
 
-pip install -r requirements.txt
+- `mkvmerge` (paquete `mkvtoolnix`)
+- `ffmpeg`
+- `mediainfo`
 
-## Entorno recomendado
+Verificación rápida:
 
-Virtualenv local:
+```bash
+python3 --version
+mkvmerge --version
+ffmpeg -version
+mediainfo --Version
+```
 
+## Dependencias Python
+
+Paquetes principales:
+
+- `typer`
+- `rich`
+- `questionary`
+- `pydantic`
+
+Instalación recomendada:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## Notas de entorno
+
+- Para bibliotecas grandes, usar discos/montajes con permisos de lectura/escritura claros.
+- En contenedores, validar acceso a rutas bind/NFS antes de ejecutar acciones de escritura.

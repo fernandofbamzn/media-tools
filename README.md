@@ -1,57 +1,31 @@
-~MEDIA TOOLS CLI
-===============
+# media-tools
 
-Herramienta interactiva para limpieza y gestión de pistas multimedia.
+CLI para analizar y planificar edición segura de archivos multimedia (MKV/MP4), orientada a bibliotecas grandes en Linux.
 
-FUNCIONES
----------
+## Qué hace
 
-- Navegación interactiva por directorios
-- Análisis de pistas con mkvmerge
-- Eliminación de pistas duplicadas
-- Filtrado de idiomas de audio
-- Filtrado de subtítulos
-- Transcodificación opcional con ffmpeg
-- Informe previo antes de ejecutar
+- Inspección de archivos y pistas (audio/subtítulos).
+- Detección de duplicados.
+- Selección de idiomas.
+- Generación de auditorías e informes previos.
+- Preparación de cambios seguros (siempre con confirmación explícita).
 
-FLUJO DE USO
-------------
+## Estado del proyecto
 
-1. Ejecutar el programa
+La hoja de ruta por fases vive en `docs/fases_desarrollo.md`.
 
-   media-tools
+## Inicio rápido
 
-2. Seleccionar carpeta o archivo
+1. Revisar requisitos del entorno en `docs/requisitos.md`.
+2. Revisar arquitectura en `docs/arquitectura.md`.
+3. Revisar reglas de desarrollo en `docs/dev_rules.md`.
+4. Usar la guía operativa en `docs/manual.md`.
 
-3. Elegir opciones de limpieza
+## Estructura de documentación
 
-4. Revisar informe
-
-5. Confirmar ejecución
-
-MODOS DE SEGURIDAD
-------------------
-
-Modo simulación (recomendado).
-
-No modifica archivos, solo muestra lo que haría.
-
-RUTAS IMPORTANTES
------------------
-
-Script principal:
-/opt/media-tools/media_tools_cli.py
-
-Comando del sistema:
-/usr/local/bin/media-tools
-
-EJEMPLOS DE USO
----------------
-
-Procesar una serie:
-
-/Filmoteca/Series/ONE PIECE (2023)/
-
-Procesar un episodio concreto:
-
-/Filmoteca/.../S02E01.mkv
+- `PROJECT_CONTEXT.md`: contexto ejecutivo y decisiones de alto nivel.
+- `docs/requisitos.md`: dependencias del sistema y entorno Python.
+- `docs/arquitectura.md`: capas, responsabilidades y flujo técnico.
+- `docs/dev_rules.md`: normas de implementación y calidad.
+- `docs/fases_desarrollo.md`: roadmap por fases y estado.
+- `docs/manual.md`: uso operativo de la herramienta.

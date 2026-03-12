@@ -1,39 +1,35 @@
 # Project Context
 
-Project: media-tools
+## Propósito
 
-media-tools is a CLI application designed to manage and analyze multimedia libraries.
+`media-tools` es una aplicación CLI para gestionar bibliotecas multimedia y preparar ediciones de forma segura y trazable.
 
-Primary goals:
+## Entorno objetivo
 
-- inspect MKV/MP4 media files
-- analyze audio and subtitle tracks
-- remove duplicated tracks
-- keep only selected languages
-- generate reports about media libraries
-- optionally optimize media files
+- Linux (servidores domésticos y self-hosted).
+- Contenedores LXC/Proxmox.
+- Bibliotecas grandes montadas por NFS o bind mounts.
 
-Typical environment:
+## Stack técnico
 
-Linux server  
-Proxmox LXC containers  
-large media libraries mounted via NFS or bind mounts
+- Python 3
+- Typer (CLI)
+- Rich + Questionary (interfaz interactiva)
+- mkvmerge, ffmpeg y mediainfo (herramientas externas)
 
-Primary tools used by the application:
+## Principios no negociables
 
-mkvmerge  
-ffmpeg  
-mediainfo  
+- Arquitectura por capas: `UI → Services → Repository → Models`.
+- Confirmación explícita antes de cualquier acción destructiva.
+- Operaciones idempotentes y enfoque fail-fast.
+- Cero rutas o credenciales hardcodeadas.
 
-Python stack:
+## Navegación documental
 
-Typer  
-Rich  
-Questionary  
+Para detalles concretos consultar:
 
-Architecture:
-
-CLI → Services → Repository → Models
-
-The application must remain safe for large media libraries and must never modify files without explicit user confirmation.
-
+- Requisitos: `docs/requisitos.md`
+- Arquitectura: `docs/arquitectura.md`
+- Reglas de desarrollo: `docs/dev_rules.md`
+- Roadmap: `docs/fases_desarrollo.md`
+- Manual de uso: `docs/manual.md`
