@@ -1,6 +1,7 @@
+clibaseapp @ git+https://github.com/fernandofbamzn/clibaseapp.git
 rich
 questionary
 typer>=0.9.0
+pydantic
 pytest>=8.0.0
 pytest-mock>=3.14.0
-pydantic
