@@ -1,4 +1,5 @@
 # Reglas de Desarrollo
+Para el desarrollo de la aplicación CLI, debemos seguir la guia de desarrollo establecida en el archivo `docs/guia_desarrollo.md`.
 
 Normas para implementar cambios sin degradar calidad, seguridad ni mantenibilidad.
 
