@@ -41,7 +41,7 @@ class AuditService:
                 audio_languages[audio.language] = audio_languages.get(audio.language, 0) + 1
                 audio_codecs[audio.codec] = audio_codecs.get(audio.codec, 0) + 1
 
-                signature = (audio.language, audio.codec, audio.channels, audio.name)
+                signature = (audio.language, audio.codec, audio.channels)
                 if signature in seen_audio_signatures:
                     duplicate_candidate = True
                 seen_audio_signatures.add(signature)

@@ -1,7 +1,6 @@
 rich
 questionary
-typer
+typer>=0.9.0
+pytest>=8.0.0
+pytest-mock>=3.14.0
 pydantic
-mkvmerge
-ffmpeg
-mediainfo
