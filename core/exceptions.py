@@ -1,10 +1,13 @@
 """
-Errores personalizados de la aplicación.
+Excepciones personalizadas de media-tools.
+Heredan de las excepciones base del framework clibaseapp.
 """
 
+from clibaseapp.exceptions import CLIAppError
 
-class MediaToolsError(Exception):
-    """Error base de la aplicación."""
+
+class MediaToolsError(CLIAppError):
+    """Error base de la aplicación media-tools."""
 
 
 class MediaPermissionError(MediaToolsError):
@@ -27,10 +30,5 @@ class ConfigurationError(MediaToolsError):
     """Error de configuración inválida."""
 
 
-# Alias de compatibilidad hacia atrás.
-PermissionError = MediaPermissionError
-BinaryMissing = BinaryMissingError
-
 class DependencyInstallationError(MediaToolsError):
     """Fallo al instalar dependencias de Python mediante pip."""
-

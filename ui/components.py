@@ -1,72 +1,12 @@
 """
-Componentes visuales reutilizables.
+Componentes visuales ESPECÍFICOS de media-tools.
+Todo lo genérico (clear_screen, pause, show_header, etc.) se importa de clibaseapp.
 """
 
-from typing import Dict
-
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
 from rich.tree import Tree
 
+from clibaseapp import clear_screen, console, dict_table, show_error, show_header, show_info, show_success, show_warning
 from models.schemas import AuditSummary, BrowseResult, DoctorResult
-from ui.theme import APP_THEME
-
-console = Console(theme=APP_THEME)
-
-
-def clear_screen() -> None:
-    """Limpia la terminal."""
-    console.clear()
-
-
-def pause() -> None:
-    """Pausa la ejecución hasta que el usuario pulse Enter."""
-    console.print()
-    console.print("[dim]Pulsar Enter para continuar...[/dim]", end="")
-    input()
-    console.print()
-
-
-def show_header(title: str, breadcrumb: str = "", icon: str = "") -> None:
-    """Renderiza encabezado principal con breadcrumb e icono opcional."""
-    if breadcrumb:
-        console.print(f"[breadcrumb]📍 {breadcrumb}[/breadcrumb]")
-    
-    title_text = f"{icon} {title}" if icon else title
-    console.print(Panel(f"[header]{title_text}[/header]", border_style="cyan", padding=(1, 2), expand=False))
-
-
-def show_info(text: str) -> None:
-    """Mensaje informativo."""
-    console.print(f"[info]ℹ {text}[/info]")
-
-
-def show_success(text: str) -> None:
-    """Mensaje de éxito."""
-    console.print(f"[success]✔ {text}[/success]")
-
-
-def show_warning(text: str) -> None:
-    """Mensaje de advertencia."""
-    console.print(f"[warning]⚠ {text}[/warning]")
-
-
-def show_error(text: str) -> None:
-    """Mensaje de error."""
-    console.print(f"[error]✖ {text}[/error]")
-
-
-def dict_table(title: str, values: Dict[str, int], key_label: str, value_label: str) -> Table:
-    """Construye una tabla Rich a partir de un diccionario."""
-    table = Table(title=f"📊 [bold]{title}[/bold]", show_lines=True, header_style="bold cyan", expand=True)
-    table.add_column(key_label, style="cyan", justify="left")
-    table.add_column(value_label, justify="right", style="green", width=15)
-
-    for key, value in sorted(values.items(), key=lambda x: (-x[1], x[0])):
-        table.add_row(str(key), str(value))
-
-    return table
 
 
 def render_doctor_result(result: DoctorResult) -> None:
@@ -131,7 +71,8 @@ def render_audit_summary(summary: AuditSummary) -> None:
                 name_info = f" - {t.name}" if t.name else ""
                 channels = f" ({t.channels}ch)" if t.channels else ""
                 default_tag = " [bold green](Por defecto)[/bold green]" if t.default else ""
-                audio_node.add(f"\[[cyan]{t.language}[/cyan]] {t.codec}{channels}{name_info}{default_tag}")
+                label = f"[cyan]{t.language}[/cyan]" 
+                audio_node.add("[" + label + "] " + f"{t.codec}{channels}{name_info}{default_tag}")
 
         # Subtítulos
         if media_file.subtitle_tracks:
@@ -140,7 +81,8 @@ def render_audit_summary(summary: AuditSummary) -> None:
                 name_info = f" - {t.name}" if t.name else ""
                 forced_tag = " [bold red](Forzados)[/bold red]" if t.forced else ""
                 default_tag = " [bold green](Por defecto)[/bold green]" if t.default and not t.forced else ""
-                sub_node.add(f"\[[cyan]{t.language}[/cyan]] {t.codec}{name_info}{forced_tag}{default_tag}")
+                label = f"[cyan]{t.language}[/cyan]"
+                sub_node.add("[" + label + "] " + f"{t.codec}{name_info}{forced_tag}{default_tag}")
 
         console.print(tree)
         console.print()

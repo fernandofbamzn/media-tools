@@ -7,8 +7,8 @@ from typing import List, Tuple
 import questionary
 from questionary import Choice
 
+from clibaseapp import clear_screen, show_error, show_header, show_info, show_warning
 from models.schemas import ActionType, CleanPlan, TrackAction
-from ui.components import clear_screen, show_error, show_header, show_info, show_warning
 
 
 def _track_signature(track) -> Tuple:
