@@ -1,287 +1,52 @@
-# Reglas de Desarrollo del Proyecto
+# Reglas de Desarrollo
 
-Estas reglas definen los principios obligatorios para modificar o extender el proyecto **media-tools**.
+Normas para implementar cambios sin degradar calidad, seguridad ni mantenibilidad.
 
-Están diseñadas para que **desarrolladores humanos y agentes IA** puedan trabajar en el proyecto sin romper su arquitectura.
+## 1) Principios de implementación
 
----
+- **Fail-fast**: validar precondiciones antes de actuar.
+- **Idempotencia**: una operación repetida no debe corromper resultados.
+- **No hardcoding**: rutas, perfiles y parámetros sensibles deben ser configurables.
+- **Cambios pequeños**: preferir iteraciones cortas y revisables.
 
-# 1. Arquitectura del Proyecto
+> Las responsabilidades por capa se documentan en `docs/arquitectura.md`.
 
-El proyecto sigue una arquitectura CLI modular de capas (N-Tier).
+## 2) Estilo de código
 
-Estructura obligatoria:
+- Type hints obligatorios en APIs públicas.
+- Docstrings en clases y métodos públicos.
+- Funciones pequeñas y enfocadas (evitar >100 líneas salvo justificación clara).
+- Nombres explícitos de variables y funciones.
 
-media-tools
-├── main.py
-├── core/
-├── models/
-├── services/
-├── data/
-├── ui/
-├── docs/
-└── scripts/
+## 3) Reglas por capa
 
-## Responsabilidad de cada capa
+- `ui/`: solo interacción y presentación.
+- `services/`: lógica de negocio reutilizable y testeable.
+- `data/`: acceso a recursos externos con patrón repositorio.
+- `models/`: estructuras de datos simples.
+- `core/`: configuración, excepciones y utilidades comunes.
 
-### main.py
+## 4) Seguridad operativa
 
-Entrypoint de la aplicación.
+- Ninguna acción destructiva sin confirmación explícita del usuario.
+- Validar permisos y disponibilidad de herramientas (`mkvmerge`, `ffmpeg`, `mediainfo`).
+- Evitar exponer información sensible en logs.
 
-Responsabilidades:
+## 5) Calidad y validación
 
-- registrar comandos CLI
-- inicializar servicios
-- manejo global de errores
-- verificación de dependencias
+Antes de integrar cambios:
 
-No debe contener lógica de negocio.
+1. Ejecutar checks/tests disponibles.
+2. Verificar que no se rompe el flujo de capas.
+3. Actualizar documentación afectada.
+4. Registrar limitaciones o deuda técnica detectada.
 
----
+## 6) Estrategia de cambio recomendada
 
-### core/
+Cuando una funcionalidad toca múltiples capas:
 
-Infraestructura base del proyecto.
-
-Contiene:
-
-- gestión de configuración
-- errores personalizados
-- utilidades internas
-
-No debe contener lógica específica de la aplicación.
-
----
-
-### models/
-
-Modelos de datos.
-
-Reglas:
-
-- usar dataclasses o pydantic
-- incluir type hints
-- los modelos deben ser simples y predecibles
-
-Ejemplos:
-
-MediaFile  
-Track  
-AuditReport
-
----
-
-### services/
-
-Contiene toda la lógica de negocio.
-
-Ejemplos:
-
-BrowseService  
-AuditService  
-MediaToolsService
-
-Reglas:
-
-- no depender de la UI
-- no imprimir en consola
-- no pedir input al usuario
-
-Los servicios deben ser testables.
-
----
-
-### data/
-
-Acceso a datos externos.
-
-Ejemplos:
-
-- filesystem
-- mkvmerge
-- APIs futuras
-
-Patrón obligatorio:
-
-Repository Pattern
-
-Ejemplo:
-
-MediaRepository
-
----
-
-### ui/
-
-Renderizado visual.
-
-Tecnologías:
-
-- rich
-- questionary
-
-Reglas:
-
-- solo lógica de interfaz
-- nunca lógica de negocio
-
-Ejemplos:
-
-theme.py  
-components.py  
-menus.py
-
----
-
-# 2. Principios de Diseño
-
-## Separación estricta de capas
-
-UI → Services → Repository → Models
-
-Nunca al revés.
-
-Incorrecto:
-
-UI llamando mkvmerge directamente
-
-Correcto:
-
-UI → Service → Repository → mkvmerge
-
----
-
-## No Hardcoding
-
-Evitar rutas fijas.
-
-Incorrecto:
-
-/mnt/Filmoteca
-
-Correcto:
-
-configurable vía core/config.py
-
----
-
-## Idempotencia
-
-Las operaciones deben poder ejecutarse varias veces sin romper el sistema.
-
-Ejemplos:
-
-- no sobrescribir archivos sin confirmación
-- evitar cambios irreversibles
-
----
-
-## Fail Fast
-
-Validar condiciones antes de ejecutar acciones críticas.
-
-Ejemplos:
-
-- comprobar binarios (mkvmerge)
-- comprobar permisos
-- comprobar rutas
-
----
-
-# 3. Reglas de Código
-
-## Type Hints obligatorios
-
-Todas las funciones públicas deben tener type hints.
-
-Ejemplo:
-
-def scan(self, root: Path) -> List[Path]:
-
----
-
-## Docstrings obligatorios
-
-Toda clase y método público debe tener docstring.
-
-Ejemplo:
-
-"""Analiza un archivo multimedia y devuelve sus pistas."""
-
----
-
-## Funciones pequeñas
-
-Preferir funciones cortas y claras.
-
-Evitar funciones de más de 80-100 líneas.
-
----
-
-# 4. Interfaz CLI
-
-La CLI se implementa con Typer.
-
-Reglas:
-
-- cada comando debe tener docstring
-- los comandos deben ser simples
-- no duplicar lógica entre comandos
-
-Ejemplo:
-
-media-tools doctor  
-media-tools browse  
-media-tools audit
-
----
-
-# 5. Seguridad
-
-El proyecto no debe modificar archivos sin confirmación del usuario.
-
-Las acciones destructivas deben requerir confirmación explícita.
-
-Ejemplo:
-
-¿Eliminar pistas duplicadas?
-
----
-
-# 6. Flujo de Desarrollo
-
-Antes de añadir funcionalidades:
-
-1. Revisar docs/fases_desarrollo.md
-2. Identificar la fase actual
-3. Implementar cambios solo en la fase correspondiente
-
----
-
-# 7. Uso por Agentes IA
-
-Los agentes IA deben seguir este proceso:
-
-1. Leer:
-
-docs/arquitectura.md  
-docs/dev_rules.md  
-docs/fases_desarrollo.md
-
-2. Entender la arquitectura.
-
-3. Implementar cambios respetando:
-
-- capas
-- responsabilidades
-- reglas de código
-
-4. Nunca modificar múltiples capas sin justificación.
-
----
-
-# 8. Regla Principal
-
-Si un cambio rompe la arquitectura, el cambio es incorrecto.
-
-La arquitectura del proyecto tiene prioridad sobre cualquier funcionalidad nueva.
+1. Modelos
+2. Repositorio (`data/`)
+3. Servicios
+4. UI
+5. CLI (`main.py`)
