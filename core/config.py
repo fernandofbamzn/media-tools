@@ -37,7 +37,8 @@ def update_config(key: str, value: str, config_file: Path = CONFIG_FILE) -> None
 def _write_default_config(config_file: Path) -> dict:
     """Crea el archivo de configuración con los valores por defecto."""
     default_config = {
-        "media_root": str(DEFAULT_MEDIA_ROOT.resolve())
+        "media_root": str(DEFAULT_MEDIA_ROOT.resolve()),
+        "keep_languages": ["spa", "eng", "es", "en"]
     }
     try:
         with config_file.open("w", encoding="utf-8") as handler:
@@ -127,3 +128,14 @@ def load_media_root(config_file: Path = CONFIG_FILE) -> Path:
         )
         logger.warning(message)
         return DEFAULT_MEDIA_ROOT
+
+
+def load_keep_languages(config_file: Path = CONFIG_FILE) -> list[str]:
+    """Carga los idiomas a mantener por defecto desde la configuración."""
+    config_data = _read_config_file(config_file)
+    if "keep_languages" not in config_data:
+        default_langs = ["spa", "eng", "es", "en"]
+        update_config("keep_languages", default_langs, config_file)
+        return default_langs
+    
+    return config_data["keep_languages"]

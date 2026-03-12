@@ -11,10 +11,10 @@ import questionary
 import typer
 from rich.console import Console
 
-from core.config import CONFIG_FILE, load_media_root, update_config
+from core.config import CONFIG_FILE, load_keep_languages, load_media_root, update_config
 from core.dependency_check import check_and_install
 from core.exceptions import ConfigurationError, MediaToolsError
-from models.schemas import BrowseResult
+from models.schemas import ActionType, BrowseResult
 from services.business_logic import MediaToolsService
 from ui.components import (
     clear_screen,
@@ -27,6 +27,7 @@ from ui.components import (
     show_success,
     show_warning,
 )
+from ui.clean_menu import ask_clean_plan
 from ui.doc_viewer import show_docs
 from ui.menus import BrowserMenu
 
@@ -84,6 +85,57 @@ def docs() -> None:
 
 
 @app.command()
+def clean(target: Optional[Path] = typer.Argument(None, help="Ruta a limpiar (opcional, interactivo si se omite)")) -> None:
+    """Planifica y limpia pistas de audio o subtítulos no deseadas."""
+    service = _build_service()
+    clear_screen()
+    show_header("Limpiador de Pistas", "Inicio > Limpieza", icon="🧹")
+
+    base_langs = load_keep_languages()
+    extra_str = questionary.text(
+        f"Idiomas a conservar por defecto: {', '.join(base_langs)}.\n¿Añadir idiomas para ESTA ejecución? (ej: jpn, por, fre - vacío para ninguno):",
+    ).ask()
+
+    if extra_str is None:
+        return
+
+    extra_langs = [l.strip().lower() for l in extra_str.split(",") if l.strip()]
+    keep_languages = base_langs + extra_langs
+
+    selected = _resolve_browse_selection(service, target)
+    if not selected:
+        show_warning("Selección cancelada.")
+        return
+
+    plans = service.build_clean_plans(selected, keep_languages)
+    if not plans:
+        show_warning("No se encontraron archivos multimedia para limpiar.")
+        return
+
+    final_plans = []
+    
+    for plan in plans:
+        try:
+            confirmed_plan = ask_clean_plan(plan)
+            final_plans.append(confirmed_plan)
+            clear_screen()
+        except KeyboardInterrupt:
+            show_warning("\nProceso de planificación cancelado por el usuario.")
+            return
+
+    clear_screen()
+    show_header("Resumen del Plan de Limpieza", "Inicio > Limpieza > Resumen", icon="📝")
+    for p in final_plans:
+        to_keep = sum(1 for a in p.track_actions if a.action == ActionType.KEEP)
+        to_remove = sum(1 for a in p.track_actions if a.action == ActionType.REMOVE)
+        show_info(f"🎬 {p.media_file.path.name}")
+        console.print(f"   [green]+ Conservar: {to_keep} pistas[/green] | [red]- Eliminar: {to_remove} pistas[/red]")
+        console.print()
+
+    show_success("Planificación confirmada. (Nota: Ejecución real pendiente de implementar).")
+
+
+@app.command()
 def config() -> None:
     """Abre el editor de configuración interactivo."""
     clear_screen()
@@ -137,6 +189,7 @@ def _interactive_main_menu() -> None:
             "Selecciona una opción:",
             choices=[
                 questionary.Choice("🎬 Navegar Biblioteca (browse)", value="browse"),
+                questionary.Choice("🧹 Limpiar Pistas (clean)", value="clean"),
                 questionary.Choice("🔍 Auditoría (audit)", value="audit"),
                 questionary.Choice("🩺 Diagnóstico (doctor)", value="doctor"),
                 questionary.Choice("⚙️ Configuración (config)", value="config"),
@@ -147,6 +200,9 @@ def _interactive_main_menu() -> None:
 
         if choice == "browse":
             browse(None)
+            pause()
+        elif choice == "clean":
+            clean(None)
             pause()
         elif choice == "audit":
             audit(None)

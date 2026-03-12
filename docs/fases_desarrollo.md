@@ -15,7 +15,7 @@ Incluye:
 
 **Estado**: completada.
 
-## Fase 2 — Navegación y auditoría 🚧
+## Fase 2 — Navegación y auditoría ✅
 
 **Objetivo**: inspección fiable de bibliotecas multimedia.
 
@@ -26,20 +26,20 @@ Incluye:
 - auditoría de idiomas y códecs
 - detección preliminar de duplicados
 
-**Estado**: en progreso.
+**Estado**: completada.
 
-## Fase 3 — Planificación de cambios ⏳
+## Fase 3 — Lógica de negocio y Acciones sobre archivos 🚧
 
-**Objetivo**: preparar modificaciones seguras y revisables.
+**Objetivo**: ejecutar acciones reales de limpieza y organizar pistas sobre los archivos multimedia.
 
 Incluye:
 
-- selección de pistas a conservar/eliminar
-- filtros por idioma
-- informe previo de cambios
-- confirmación explícita antes de aplicar
+- lógica para identificar pistas a conservar (ej: vídeo principal, audios predeterminados/español)
+- eliminación (demux/remux) de audios y subtítulos innecesarios usando `mkvmerge`/`ffmpeg`
+- resolución o aviso en caso de pistas conflictivas o duplicadas
+- informe de las acciones tomadas y ahorro de espacio en el archivo final
 
-**Estado**: pendiente.
+**Estado**: en progreso.
 
 ## Fase 4 — Optimización de vídeo 🔭
 

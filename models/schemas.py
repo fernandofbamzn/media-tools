@@ -3,6 +3,7 @@ Modelos de datos de la aplicación.
 """
 
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -63,6 +64,36 @@ class AuditReport:
     files_without_spanish_audio: int
     files_with_duplicate_candidate_audio: int
     detailed_files: List[MediaFile] = field(default_factory=list)
+
+
+class ActionType(Enum):
+    """Acciones a realizar sobre una pista."""
+    KEEP = "keep"
+    REMOVE = "remove"
+
+
+@dataclass
+class TrackAction:
+    """Acción planificada para una pista concreta."""
+    track: Track
+    action: ActionType
+    reason: str = ""
+
+
+@dataclass
+class CleanPlan:
+    """Plan de limpieza proyectado para un archivo."""
+    media_file: MediaFile
+    track_actions: List[TrackAction]
+    keep_languages: List[str]
+
+    @property
+    def tracks_to_keep(self) -> List[TrackAction]:
+        return [t for t in self.track_actions if t.action == ActionType.KEEP]
+
+    @property
+    def tracks_to_remove(self) -> List[TrackAction]:
+        return [t for t in self.track_actions if t.action == ActionType.REMOVE]
 
 
 @dataclass
