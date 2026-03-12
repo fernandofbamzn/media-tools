@@ -8,6 +8,29 @@ Guía operativa para ejecutar `media-tools` de forma segura.
 2. Activar entorno virtual (si aplica).
 3. Verificar disponibilidad de binarios externos.
 
+## 1.1 Configurar `media_root`
+
+Antes de navegar o auditar, define la raíz de tu biblioteca:
+
+- **Opción A (recomendada en terminal):** variable de entorno `MEDIA_TOOLS_MEDIA_ROOT`.
+- **Opción B (persistente):** `~/.config/media-tools/config.json` con clave `media_root`.
+
+Ejemplo:
+
+```json
+{
+  "media_root": "/srv/media"
+}
+```
+
+Validaciones aplicadas al cargar configuración:
+
+- la ruta debe existir
+- debe ser directorio
+- debe tener permisos de lectura
+
+Si falla la ruta configurada, la CLI intenta `/mnt/Filmoteca` como fallback explícito y muestra un error claro si tampoco es válida.
+
 ## 2. Ejecución
 
 Comando principal:

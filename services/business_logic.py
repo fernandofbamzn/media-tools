@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 class MediaToolsService:
     """Servicio principal de la aplicación."""
 
-    def __init__(self, default_root: Optional[Path] = None) -> None:
+    def __init__(self, default_root: Path) -> None:
         self.repo = MediaRepository()
         self.audit_service = AuditService()
         self.browse_service = BrowseService()
-        self.default_root = default_root or Path("/mnt/Filmoteca")
+        self.default_root = default_root
 
     def doctor(self) -> DoctorResult:
         """Diagnóstico del sistema sin renderizado en consola."""
