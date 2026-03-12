@@ -1,20 +1,23 @@
 """
-Servicio de navegación interactiva.
+Servicio de navegación desacoplado de la UI.
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Protocol
 
 from models.schemas import BrowseResult
-from ui.menus import BrowserMenu
+
+
+class BrowseSelector(Protocol):
+    """Puerto de navegación implementado por capa superior (UI)."""
+
+    def browse(self, root: Path) -> Optional[BrowseResult]:
+        """Resuelve una selección de archivo o carpeta."""
 
 
 class BrowseService:
-    """Lógica de navegación de biblioteca."""
+    """Lógica de navegación de biblioteca sin dependencias de UI."""
 
-    def __init__(self, browser_menu: Optional[BrowserMenu] = None) -> None:
-        self.browser_menu = browser_menu or BrowserMenu()
-
-    def browse(self, root: Path) -> Optional[BrowseResult]:
-        """Abre el navegador y devuelve la selección."""
-        return self.browser_menu.browse(root)
+    def browse(self, root: Path, selector: BrowseSelector) -> Optional[BrowseResult]:
+        """Delega la selección al adaptador recibido por inversión de dependencias."""
+        return selector.browse(root)

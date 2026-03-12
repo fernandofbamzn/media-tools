@@ -62,3 +62,31 @@ class AuditReport:
     files_without_subtitles: int
     files_without_spanish_audio: int
     files_with_duplicate_candidate_audio: int
+
+
+@dataclass
+class DoctorCheck:
+    """Estado de una dependencia del sistema."""
+
+    name: str
+    available: bool
+
+
+@dataclass
+class DoctorResult:
+    """Resultado del diagnóstico del sistema."""
+
+    checks: List[DoctorCheck]
+    media_root: Path
+    media_root_exists: bool
+
+
+@dataclass
+class AuditSummary:
+    """Resultado de ejecución de auditoría para capa de presentación."""
+
+    cancelled: bool
+    selected_path: Optional[Path]
+    selection_type: Optional[str]
+    scanned_files: int
+    report: Optional[AuditReport]
