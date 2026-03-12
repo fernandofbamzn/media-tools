@@ -29,3 +29,23 @@ La hoja de ruta por fases vive en `docs/fases_desarrollo.md`.
 - `docs/dev_rules.md`: normas de implementación y calidad.
 - `docs/fases_desarrollo.md`: roadmap por fases y estado.
 - `docs/manual.md`: uso operativo de la herramienta.
+
+
+## Configuración de `media_root`
+
+La ruta base de la biblioteca multimedia se resuelve con esta prioridad:
+
+1. Variable de entorno `MEDIA_TOOLS_MEDIA_ROOT`.
+2. Clave `media_root` en `~/.config/media-tools/config.json`.
+3. Fallback explícito `/mnt/Filmoteca`.
+
+Ejemplo de `config.json`:
+
+```json
+{
+  "media_root": "/srv/media"
+}
+```
+
+La ruta configurada debe existir, ser un directorio y tener permisos de lectura.
+Si la ruta configurada es inválida, se intenta el fallback y se reporta un error claro si también falla.

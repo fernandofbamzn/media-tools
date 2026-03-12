@@ -13,3 +13,7 @@ class PermissionError(MediaToolsError):
 
 class BinaryMissing(MediaToolsError):
     """Falta una dependencia del sistema."""
+
+
+class ConfigurationError(MediaToolsError):
+    """Error de configuración inválida."""
