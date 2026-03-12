@@ -2,6 +2,7 @@
 Menús interactivos con Questionary.
 """
 
+import logging
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -12,6 +13,8 @@ from models.schemas import BrowseResult
 
 
 VIDEO_EXTENSIONS = {".mkv", ".mp4", ".m4v"}
+
+logger = logging.getLogger(__name__)
 
 
 class BaseMenu:
@@ -53,8 +56,37 @@ class BrowserMenu(BaseMenu):
         current = root.resolve()
 
         while True:
-            dirs, files = list_entries(current)
             breadcrumb = str(current)
+
+            try:
+                dirs, files = list_entries(current)
+            except (PermissionError, FileNotFoundError, NotADirectoryError):
+                logger.warning("No se pudo abrir la ruta de navegación: %s", current)
+                choices: List[Choice] = []
+
+                if current != root:
+                    choices.append(Choice(title="⬅ Volver atrás", value=("up", current.parent)))
+
+                choices.append(Choice(title="❌ Cancelar", value=("cancel", None)))
+
+                result = self.ask_select(
+                    message=(
+                        f"Navegación > {breadcrumb}\n"
+                        "No se pudo abrir esta ruta (permisos o ruta inválida)."
+                    ),
+                    choices=choices,
+                )
+
+                if result is None:
+                    return None
+
+                action, path = result
+
+                if action == "up":
+                    current = path
+                    continue
+
+                return None
 
             choices: List[Choice] = [
                 Choice(title=f"✅ Seleccionar esta carpeta: {current.name or str(current)}", value=("select_dir", current)),

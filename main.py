@@ -11,7 +11,7 @@ from rich.console import Console
 
 from core.config import load_media_root
 from core.dependency_check import check_and_install
-from core.exceptions import ConfigurationError
+from core.exceptions import ConfigurationError, MediaToolsError
 from models.schemas import BrowseResult
 from services.business_logic import MediaToolsService
 from ui.components import render_audit_summary, render_browse_result, render_doctor_result
@@ -74,6 +74,9 @@ def main() -> None:
     except ConfigurationError as exc:
         console.print(f"[red]Error de configuración: {exc}[/]")
         sys.exit(2)
+    except MediaToolsError as exc:
+        console.print(f"[red]Error operativo: {exc}[/]")
+        sys.exit(3)
     except KeyboardInterrupt:
         console.print("\n[yellow]Cancelado por el usuario[/]")
         sys.exit(0)

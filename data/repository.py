@@ -3,11 +3,21 @@ Repositorio de acceso al sistema de archivos y análisis multimedia.
 """
 
 import json
+import logging
 import subprocess
 from pathlib import Path
 from typing import List
 
+from core.exceptions import (
+    BinaryMissingError,
+    ExternalToolExecutionError,
+    InvalidMediaMetadataError,
+    MediaPermissionError,
+)
 from models.schemas import MediaFile, Track
+
+
+logger = logging.getLogger(__name__)
 
 
 class MediaRepository:
@@ -19,22 +29,55 @@ class MediaRepository:
         """Escanea recursivamente archivos multimedia."""
         files: List[Path] = []
 
-        for path in root.rglob("*"):
-            if path.is_file() and path.suffix.lower() in self.VIDEO_EXTENSIONS:
-                files.append(path)
+        try:
+            for path in root.rglob("*"):
+                if path.is_file() and path.suffix.lower() in self.VIDEO_EXTENSIONS:
+                    files.append(path)
+        except PermissionError as exc:
+            logger.exception("Permiso denegado al escanear la ruta: %s", root)
+            raise MediaPermissionError(
+                f"Permiso denegado al escanear la ruta: {root}"
+            ) from exc
 
         return sorted(files)
 
     def analyze_file(self, path: Path) -> MediaFile:
         """Analiza un archivo con mkvmerge y devuelve sus pistas."""
-        result = subprocess.run(
-            ["mkvmerge", "-J", str(path)],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        try:
+            result = subprocess.run(
+                ["mkvmerge", "-J", str(path)],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            data = json.loads(result.stdout)
+        except PermissionError as exc:
+            logger.exception("Permiso denegado al analizar archivo: %s", path)
+            raise MediaPermissionError(
+                f"Permiso denegado al analizar el archivo: {path}"
+            ) from exc
+        except FileNotFoundError as exc:
+            logger.exception("Binario mkvmerge no encontrado al analizar: %s", path)
+            raise BinaryMissingError(
+                "No se encontró 'mkvmerge'. Verifica dependencias del sistema."
+            ) from exc
+        except subprocess.CalledProcessError as exc:
+            stderr = (exc.stderr or "").strip()
+            logger.error(
+                "mkvmerge falló para %s con código %s: %s",
+                path,
+                exc.returncode,
+                stderr,
+            )
+            raise ExternalToolExecutionError(
+                f"mkvmerge devolvió código {exc.returncode} para '{path}'. {stderr}"
+            ) from exc
+        except json.JSONDecodeError as exc:
+            logger.exception("JSON inválido devuelto por mkvmerge para: %s", path)
+            raise InvalidMediaMetadataError(
+                f"Salida JSON inválida de mkvmerge para '{path}'."
+            ) from exc
 
-        data = json.loads(result.stdout)
         tracks: List[Track] = []
 
         for raw_track in data.get("tracks", []):
@@ -63,7 +106,20 @@ class MediaRepository:
         """Analiza múltiples archivos multimedia."""
         analyzed: List[MediaFile] = []
 
-        for file_path in files:
-            analyzed.append(self.analyze_file(file_path))
+        try:
+            for file_path in files:
+                analyzed.append(self.analyze_file(file_path))
+        except (
+            MediaPermissionError,
+            BinaryMissingError,
+            ExternalToolExecutionError,
+            InvalidMediaMetadataError,
+        ):
+            raise
+        except PermissionError as exc:
+            logger.exception("Permiso denegado durante análisis en lote")
+            raise MediaPermissionError(
+                "Permiso denegado durante el análisis de archivos multimedia."
+            ) from exc
 
         return analyzed
