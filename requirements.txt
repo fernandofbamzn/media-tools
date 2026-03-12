@@ -1,0 +1,7 @@
+rich
+questionary
+typer
+pydantic
+mkvmerge
+ffmpeg
+mediainfo
