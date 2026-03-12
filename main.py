@@ -38,8 +38,16 @@ def _build_service() -> MediaToolsService:
     return MediaToolsService(default_root=media_root)
 
 
-def _resolve_browse_selection(service: MediaToolsService) -> Optional[BrowseResult]:
-    """Resuelve una selección interactiva desde la capa UI."""
+def _resolve_browse_selection(service: MediaToolsService, target: Optional[Path] = None) -> Optional[BrowseResult]:
+    """Resuelve una selección interactiva desde la capa UI o desde un argumento."""
+    if target:
+        resolved = target.expanduser().resolve()
+        if not resolved.exists():
+            show_error(f"La ruta especificada no existe: {resolved}")
+            raise typer.Exit(1)
+        sel_type = "file" if resolved.is_file() else "directory"
+        return BrowseResult(selected_path=resolved, selection_type=sel_type)
+
     menu = BrowserMenu()
     return service.browse_service.browse(service.default_root, menu)
 
@@ -52,18 +60,18 @@ def doctor() -> None:
 
 
 @app.command()
-def browse() -> None:
+def browse(target: Optional[Path] = typer.Argument(None, help="Ruta a inspeccionar (opcional, interactivo si se omite)")) -> None:
     """Navegación interactiva de biblioteca."""
     service = _build_service()
-    selected = _resolve_browse_selection(service)
+    selected = _resolve_browse_selection(service, target)
     render_browse_result(service.browse(selected))
 
 
 @app.command()
-def audit() -> None:
+def audit(target: Optional[Path] = typer.Argument(None, help="Ruta a auditar (opcional, interactivo si se omite)")) -> None:
     """Auditoría de biblioteca."""
     service = _build_service()
-    selected = _resolve_browse_selection(service)
+    selected = _resolve_browse_selection(service, target)
     render_audit_summary(service.audit(selected))
 
 
@@ -107,6 +115,45 @@ def config() -> None:
             show_warning("Operación cancelada.")
     else:
         show_info("Saliendo sin guardar cambios.")
+
+
+@app.callback(invoke_without_command=True)
+def main_callback(ctx: typer.Context) -> None:
+    """Media Tools CLI profesional."""
+    if ctx.invoked_subcommand is None:
+        _interactive_main_menu()
+
+
+def _interactive_main_menu() -> None:
+    """Menú interactivo principal cuando no se proveen comandos."""
+    show_header("Media Tools", "Inicio")
+
+    while True:
+        choice = questionary.select(
+            "Selecciona una opción:",
+            choices=[
+                questionary.Choice("Navegar Biblioteca (browse)", value="browse"),
+                questionary.Choice("Auditoría (audit)", value="audit"),
+                questionary.Choice("Diagnóstico (doctor)", value="doctor"),
+                questionary.Choice("Configuración (config)", value="config"),
+                questionary.Choice("Documentación (docs)", value="docs"),
+                questionary.Choice("Salir", value="exit"),
+            ]
+        ).ask()
+
+        if choice == "browse":
+            browse(None)
+        elif choice == "audit":
+            audit(None)
+        elif choice == "doctor":
+            doctor()
+        elif choice == "config":
+            config()
+        elif choice == "docs":
+            docs()
+        else:
+            show_info("¡Hasta la próxima!")
+            break
 
 
 def main() -> None:
