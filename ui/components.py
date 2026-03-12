@@ -7,6 +7,7 @@ from typing import Dict
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from rich.tree import Tree
 
 from models.schemas import AuditSummary, BrowseResult, DoctorResult
 from ui.theme import APP_THEME
@@ -92,6 +93,42 @@ def render_audit_summary(summary: AuditSummary) -> None:
 
     show_info(f"Analizando {summary.scanned_files} archivos...")
     show_success(f"Archivos analizados: {summary.report.total_files}")
+    console.print()
+
+    # Desglose de archivos e información detallada de pistas por archivo
+    for media_file in summary.report.detailed_files:
+        tree = Tree(f"🎬 [bold cyan]{media_file.path.name}[/bold cyan] [dim]({media_file.container})[/dim]")
+
+        # Video
+        if media_file.video_tracks:
+            video_node = tree.add("🎞️ [bold]Vídeo[/bold]")
+            for t in media_file.video_tracks:
+                name_info = f" - {t.name}" if t.name else ""
+                video_node.add(f"[{t.language}] {t.codec}{name_info}")
+
+        # Audio
+        if media_file.audio_tracks:
+            audio_node = tree.add("🔊 [bold]Audio[/bold]")
+            for t in media_file.audio_tracks:
+                name_info = f" - {t.name}" if t.name else ""
+                channels = f" ({t.channels}ch)" if t.channels else ""
+                default_tag = " [bold green](Por defecto)[/bold green]" if t.default else ""
+                audio_node.add(f"\[[cyan]{t.language}[/cyan]] {t.codec}{channels}{name_info}{default_tag}")
+
+        # Subtítulos
+        if media_file.subtitle_tracks:
+            sub_node = tree.add("💬 [bold]Subtítulos[/bold]")
+            for t in media_file.subtitle_tracks:
+                name_info = f" - {t.name}" if t.name else ""
+                forced_tag = " [bold red](Forzados)[/bold red]" if t.forced else ""
+                default_tag = " [bold green](Por defecto)[/bold green]" if t.default and not t.forced else ""
+                sub_node.add(f"\[[cyan]{t.language}[/cyan]] {t.codec}{name_info}{forced_tag}{default_tag}")
+
+        console.print(tree)
+        console.print()
+
+    # Resumen general (Métricas)
+    show_header("Resumen Global")
     console.print(dict_table("Idiomas de audio", summary.report.audio_languages, "Idioma", "Pistas"))
     console.print(
         dict_table("Idiomas de subtítulos", summary.report.subtitle_languages, "Idioma", "Pistas")

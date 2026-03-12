@@ -61,4 +61,5 @@ class AuditService:
             files_without_subtitles=files_without_subtitles,
             files_without_spanish_audio=files_without_spanish_audio,
             files_with_duplicate_candidate_audio=files_with_duplicate_candidate_audio,
+            detailed_files=files,
         )

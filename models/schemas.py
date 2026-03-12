@@ -62,6 +62,7 @@ class AuditReport:
     files_without_subtitles: int
     files_without_spanish_audio: int
     files_with_duplicate_candidate_audio: int
+    detailed_files: List[MediaFile] = field(default_factory=list)
 
 
 @dataclass
