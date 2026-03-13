@@ -29,7 +29,8 @@ Validaciones aplicadas al cargar configuración:
 - debe ser directorio
 - debe tener permisos de lectura
 
-Si falla la ruta configurada, la CLI intenta `/mnt/Filmoteca` como fallback explícito y muestra un error claro si tampoco es válida.
+La configuración persistente la gestiona la instancia `self.config` heredada de `CLIBaseApp`.
+Si falla la ruta configurada, la CLI intenta el directorio actual como fallback explícito y muestra un error claro si tampoco es válido.
 
 ## 2. Ejecución
 

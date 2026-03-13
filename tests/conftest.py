@@ -1,6 +1,18 @@
-import pytest
 import json
+import sys
 from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+CLIBASEAPP_SRC = REPO_ROOT / "clibaseapp" / "src"
+MEDIA_TOOLS_ROOT = REPO_ROOT / "media-tools"
+
+for import_path in (MEDIA_TOOLS_ROOT, CLIBASEAPP_SRC):
+    import_path_str = str(import_path)
+    if import_path_str not in sys.path:
+        sys.path.insert(0, import_path_str)
+
 from models.schemas import MediaFile
 
 @pytest.fixture

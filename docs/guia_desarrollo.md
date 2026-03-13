@@ -322,6 +322,9 @@ class AppLogic:
         self.ui = UIManager()
         self.app_name = app_name
 
+        # Si la app hereda de CLIBaseApp, debe reutilizar la instancia
+        # self.config creada por la clase base en lugar de crear otra.
+
     def run_dummy_task(self) -> None:
         """Ejemplo de una tarea de negocio."""
         self.ui.show_header("Ejecutando Tarea", "Inicio > Tarea")
@@ -359,7 +362,7 @@ class AppLogic:
                 self.run_dummy_task()
             elif "Configuración" in seleccion:
                 self.ui.show_header("Configuración Actual", "Inicio > Configuración")
-                self.ui.console.print(self.config.data)
+                self.ui.console.print(self.config.read_all())
                 questionary.press_any_key_to_stop("\nPresiona para volver...").ask()
             elif "Ayuda" in seleccion:
                 self.ui.show_documentation()

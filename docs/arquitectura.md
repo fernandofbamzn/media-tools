@@ -31,6 +31,7 @@ media-tools/
 
 - Registra comandos Typer.
 - Inicializa servicios y wiring.
+- Inyecta la única instancia de configuración (`self.config`) heredada de `CLIBaseApp`.
 - Centraliza manejo global de errores.
 - Ejecuta verificaciones de dependencias al arranque.
 
@@ -39,6 +40,7 @@ media-tools/
 - Renderizado con Rich.
 - Menús e interacción con Questionary.
 - Traducción de entradas/salidas de usuario.
+- Workflows interactivos como `ui/workflows.py`.
 
 > No contiene lógica de negocio.
 
@@ -47,6 +49,7 @@ media-tools/
 - Casos de uso de negocio (auditoría, planificación, limpieza).
 - Orquestación entre modelos y repositorios.
 - Reglas de validación de dominio.
+- Sin impresiones, prompts ni dependencias de `questionary`/`rich`.
 
 > No hace I/O de consola ni solicita input directo.
 

@@ -10,6 +10,8 @@ CLI para analizar y planificar edición segura de archivos multimedia (MKV/MP4),
 - Generación de auditorías e informes previos.
 - Preparación de cambios seguros (siempre con confirmación explícita).
 
+La interacción CLI vive en `ui/`, mientras que `services/` queda reservada para lógica de negocio pura.
+
 ## Estado del proyecto
 
 La hoja de ruta por fases vive en `docs/fases_desarrollo.md`.
@@ -36,8 +38,8 @@ La hoja de ruta por fases vive en `docs/fases_desarrollo.md`.
 La ruta base de la biblioteca multimedia se resuelve con esta prioridad:
 
 1. Variable de entorno `MEDIA_TOOLS_MEDIA_ROOT`.
-2. Clave `media_root` en `~/.config/media-tools/config.json`.
-3. Fallback explícito `/mnt/Filmoteca`.
+2. Clave `media_root` en `~/.config/media-tools/config.json`, gestionada por la instancia `self.config` heredada de `CLIBaseApp`.
+3. Fallback explícito al directorio actual.
 
 Ejemplo de `config.json`:
 

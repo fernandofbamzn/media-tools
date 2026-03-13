@@ -2,7 +2,8 @@
 Entrypoint de Media Tools.
 
 Este archivo contiene SOLO la definición del menú y la configuración
-de la aplicación. Toda la lógica de negocio está en services/.
+de la aplicación. La lógica de negocio está en services/ y los
+workflows interactivos en ui/.
 
 Al arrancar, verifica que clibaseapp y el resto de dependencias estén
 instaladas antes de importarlas.
@@ -53,9 +54,10 @@ _ensure_dependencies()
 from pathlib import Path
 
 from clibaseapp import CLIBaseApp, render_browse_result
-from core.config import load_media_root
+from core.config import DEFAULT_KEEP_LANGUAGES, load_media_root
 from services.media_service import MediaService
 from ui.components import render_audit_summary
+from ui.workflows import browse_media, run_clean_workflow
 
 
 class MediaToolsApp(CLIBaseApp):
@@ -68,19 +70,19 @@ class MediaToolsApp(CLIBaseApp):
     navegar, auditar y limpiar pistas multimedia.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(app_name="media-tools", description="Media Tools CLI")
 
         # Configuración por defecto específica de media-tools
         self.config.default_config = {
             "media_root": str(Path.cwd().resolve()),
-            "keep_languages": ["spa", "eng", "es", "en"],
+            "keep_languages": DEFAULT_KEEP_LANGUAGES.copy(),
         }
 
         # Binarios requeridos y opcionales para el doctor
         self.require_binaries(["mkvmerge"])
         self._doctor_binaries.extend(["ffmpeg", "mediainfo"])
-        self._doctor_paths = {"media_root": load_media_root()}
+        self._doctor_paths = {"media_root": load_media_root(self.config)}
 
         # Directorio de la app (para doc_viewer)
         self._app_dir = Path(__file__).parent.resolve()
@@ -92,15 +94,15 @@ class MediaToolsApp(CLIBaseApp):
 
     def _on_browse(self) -> None:
         """Navegar biblioteca multimedia."""
-        render_browse_result(self.service.browse())
+        render_browse_result(browse_media(self.config))
 
     def _on_audit(self) -> None:
         """Auditar archivos multimedia."""
-        render_audit_summary(self.service.audit(self.service.browse()))
+        render_audit_summary(self.service.audit(browse_media(self.config)))
 
     def _on_clean(self) -> None:
         """Limpiar pistas de audio/subtítulos."""
-        self.service.run_clean_workflow()
+        run_clean_workflow(self.service, self.config)
 
     # ── Registro de menú ──────────────────────────────────────────
 
