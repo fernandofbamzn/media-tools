@@ -61,7 +61,8 @@ Workflow UI:
 ```python
 def run_clean_workflow(service: MediaService, config: ConfigManager) -> None:
     selected = browse_media(config)
-    plans = service.build_clean_plans(selected, keep_languages)
+    summary = service.audit(selected)
+    plans = service.build_clean_plans_from_media_files(summary.report.detailed_files, keep_languages)
     ...
 ```
 

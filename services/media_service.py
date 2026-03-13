@@ -12,7 +12,7 @@ from typing import List, Optional
 
 from clibaseapp import BrowseResult, scan_files
 from data.repository import MediaRepository
-from models.schemas import ActionType, AuditSummary, CleanPlan
+from models.schemas import ActionType, AuditSummary, CleanPlan, MediaFile
 from services.audit_service import AuditService
 from services.clean_service import CleanService
 
@@ -100,7 +100,23 @@ class MediaService:
             return []
 
         analyzed = self.repo.analyze_many(files)
-        return [self.clean_service.build_plan(media_file, keep_languages) for media_file in analyzed]
+        return self.build_clean_plans_from_media_files(analyzed, keep_languages)
+
+    def build_clean_plans_from_media_files(
+        self,
+        media_files: List[MediaFile],
+        keep_languages: List[str],
+    ) -> List[CleanPlan]:
+        """Genera planes de limpieza a partir de archivos ya analizados.
+
+        Este método evita repetir la fase de análisis cuando la UI ya ha
+        ejecutado una auditoría previa sobre la misma selección.
+        """
+
+        if not media_files:
+            return []
+
+        return [self.clean_service.build_plan(media_file, keep_languages) for media_file in media_files]
 
     def execute_clean_plan(self, plan: CleanPlan) -> int:
         """Ejecuta un plan individual y devuelve los bytes ahorrados."""

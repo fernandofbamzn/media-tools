@@ -43,7 +43,7 @@ media-tools/
 
 - `components.py`: renderers específicos,
 - `clean_menu.py`: selección interactiva de pistas,
-- `workflows.py`: flujos de navegación, limpieza y prompts.
+- `workflows.py`: flujo integrado de navegación, auditoría, planificación y limpieza.
 
 ### `services/`
 
@@ -70,7 +70,9 @@ media-tools/
 ui.workflows.run_clean_workflow()
   -> carga configuración
   -> abre BrowserMenu
-  -> invoca MediaService.build_clean_plans()
+  -> ejecuta la auditoría sobre la selección
+  -> muestra el resumen y pide confirmación para continuar
+  -> genera planes desde los archivos ya auditados
   -> revisa selección global en ui.clean_menu
   -> confirma cambios
   -> ejecuta remux y renderiza resultado
@@ -94,7 +96,7 @@ No permitido:
 ## Ejemplo correcto
 
 ```python
-plans = service.build_clean_plans(selection, keep_languages)
+plans = service.build_clean_plans_from_media_files(media_files, keep_languages)
 final_plans = ask_global_clean_plans(plans)
 ```
 

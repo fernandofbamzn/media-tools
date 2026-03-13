@@ -8,7 +8,7 @@
 - Analiza metadatos de audio, vídeo y subtítulos con `mkvmerge`.
 - Genera informes de auditoría por idiomas y códecs.
 - Construye planes de limpieza de pistas.
-- Ejecuta cambios destructivos solo tras confirmación explícita.
+- Ejecuta un flujo integrado de limpieza con auditoría previa y confirmación explícita.
 
 ## Arquitectura en una línea
 
@@ -57,12 +57,12 @@ Abrir la app y navegar la biblioteca:
 python main.py
 ```
 
-Flujo recomendado dentro del menú:
+Flujo disponible dentro del menú:
 
-1. `Navegar Biblioteca`
-2. `Auditoría`
-3. `Limpiar Pistas`
-4. revisar el resumen
+1. `Limpieza de Pistas`
+2. seleccionar carpeta o archivo de trabajo
+3. revisar la auditoría previa
+4. elegir qué pistas conservar
 5. confirmar cambios
 
 Configuración temporal por sesión:

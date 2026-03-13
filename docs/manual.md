@@ -36,9 +36,7 @@ python main.py
 
 Opciones de negocio:
 
-- `Navegar Biblioteca`
-- `Auditoría`
-- `Limpiar Pistas`
+- `Limpieza de Pistas`
 
 Opciones heredadas de `clibaseapp`:
 
@@ -49,49 +47,37 @@ Opciones heredadas de `clibaseapp`:
 
 Nota: `Actualizar App` solo funciona si la herramienta se ejecuta desde un clon Git válido.
 
-## 5. Flujo de auditoría
+## 5. Flujo de limpieza integrado
 
-1. entra en `Auditoría`,
-2. selecciona un archivo o carpeta,
-3. revisa el árbol de pistas y el resumen global,
-4. identifica idiomas faltantes o duplicados probables.
-
-Ejemplo de uso:
-
-```text
-Inicio -> Auditoría
--> seleccionar /srv/media/Peliculas
--> revisar idiomas de audio y subtítulos
-```
-
-## 6. Flujo de limpieza
-
-1. entra en `Limpiar Pistas`,
-2. añade idiomas extra si hace falta,
-3. selecciona la carpeta o archivo,
-4. revisa el checklist global de pistas,
-5. revisa el resumen por archivo,
-6. confirma la operación destructiva,
-7. espera al remux y revisa el resultado final.
+1. entra en `Limpieza de Pistas`,
+2. selecciona la carpeta o archivo de trabajo,
+3. revisa la auditoría automática de la selección,
+4. confirma si deseas continuar con la planificación,
+5. añade idiomas extra si hace falta,
+6. revisa el checklist global de pistas,
+7. revisa el resumen por archivo,
+8. confirma la operación destructiva,
+9. espera al remux y revisa el resultado final.
 
 Ejemplo de sesión:
 
 ```text
+Seleccionar carpeta: /srv/media/Series
+Revisar auditoría previa
 Idiomas a conservar: spa, eng
 Añadir para esta ejecución: ita
-Seleccionar carpeta: /srv/media/Series
 Revisar plan
 Confirmar cambios
 ```
 
-## 7. Buenas prácticas operativas
+## 6. Buenas prácticas operativas
 
 - empezar por un único archivo o carpeta pequeña,
 - conservar copia de seguridad si el material es crítico,
 - revisar siempre el resumen antes de confirmar,
 - no ejecutar cambios masivos sin una auditoría previa.
 
-## 8. Problemas frecuentes
+## 7. Problemas frecuentes
 
 ### No se encuentran archivos
 

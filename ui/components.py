@@ -12,7 +12,7 @@ from models.schemas import AuditSummary
 def render_audit_summary(summary: AuditSummary) -> None:
     """Renderiza resumen de auditoría multimedia."""
     clear_screen()
-    show_header("Auditoría de Biblioteca", "Inicio > Auditoría", icon="🔍")
+    show_header("Auditoría de la Selección", "Inicio > Limpieza > Auditoría", icon="🔍")
 
     if summary.cancelled:
         show_warning("Auditoría cancelada.")

@@ -87,6 +87,30 @@ def test_build_clean_plans_returns_plan_per_analyzed_file() -> None:
     service.clean_service.build_plan.assert_called_once_with(media_file, ["spa"])
 
 
+def test_build_clean_plans_from_media_files_reuses_analysis() -> None:
+    """Prueba que se pueden generar planes sin relanzar la auditoría."""
+
+    service = MediaService()
+    media_file = MediaFile(
+        path=Path("/library/movie.mkv"),
+        container="Matroska",
+        tracks=[Track(id=0, codec="H.264", language="und", type="video")],
+    )
+    plan = CleanPlan(
+        media_file=media_file,
+        track_actions=[TrackAction(track=media_file.tracks[0], action=ActionType.KEEP)],
+        keep_languages=["spa"],
+    )
+    service.clean_service.build_plan = Mock(return_value=plan)
+    service.repo.analyze_many = Mock()
+
+    result = service.build_clean_plans_from_media_files([media_file], ["spa"])
+
+    assert result == [plan]
+    service.clean_service.build_plan.assert_called_once_with(media_file, ["spa"])
+    service.repo.analyze_many.assert_not_called()
+
+
 def test_execute_clean_plans_collects_failures(tmp_path: Path) -> None:
     """Prueba que la ejecución agregada conserva bytes y errores."""
 

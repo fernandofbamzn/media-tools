@@ -7,7 +7,7 @@ Estado resumido del proyecto y de su hoja de ruta.
 | Fase | Objetivo | Estado |
 | --- | --- | --- |
 | 1 | Base del proyecto y wiring inicial | Completada |
-| 2 | Navegación y auditoría | Completada |
+| 2 | Navegación y auditoría integradas en el flujo de limpieza | Completada |
 | 3 | Limpieza de pistas con revisión previa | Completada |
 | 4 | Optimización de vídeo | Pendiente |
 | 5 | Automatización y modo headless | Pendiente |
@@ -23,19 +23,21 @@ Incluyó:
 - gestión de configuración,
 - documentación inicial.
 
-### Fase 2. Navegación y auditoría
+### Fase 2. Navegación y auditoría integradas
 
 Incluyó:
 
 - navegación de archivos,
 - análisis de metadatos,
 - informes agregados,
-- detección de duplicados probables.
+- detección de duplicados probables,
+- integración posterior dentro de la utilidad única de limpieza.
 
 ### Fase 3. Limpieza de pistas
 
 Incluyó:
 
+- consolidación del flujo de trabajo en una sola utilidad,
 - generación de planes de limpieza,
 - revisión interactiva,
 - remux con `mkvmerge`,

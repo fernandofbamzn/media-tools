@@ -24,9 +24,10 @@ from clibaseapp import (
     show_warning,
 )
 from core.config import load_keep_languages, load_media_root
-from models.schemas import ActionType, CleanPlan
+from models.schemas import AuditSummary, CleanPlan
 from services.media_service import CleanFailure, CleanResult, MediaService, VIDEO_EXTENSIONS
 from ui.clean_menu import ask_global_clean_plans
+from ui.components import render_audit_summary
 
 
 def _format_bytes(size: int) -> str:
@@ -56,19 +57,24 @@ def run_clean_workflow(service: MediaService, config: ConfigManager) -> None:
     clear_screen()
     show_header("Limpiador de Pistas", "Inicio > Limpieza", icon="🧹")
 
-    keep_languages = _ask_keep_languages(config)
-    if keep_languages is None:
-        return
-
     selected = browse_media(config)
     if selected is None:
         show_warning("Selección cancelada.")
         return
 
-    plans = service.build_clean_plans(selected, keep_languages)
-    if not plans:
-        show_warning("No se encontraron archivos multimedia para limpiar.")
+    audit_summary = service.audit(selected)
+    render_audit_summary(audit_summary)
+    if not _should_continue_after_audit(audit_summary):
         return
+
+    keep_languages = _ask_keep_languages(config)
+    if keep_languages is None:
+        return
+
+    plans = service.build_clean_plans_from_media_files(
+        audit_summary.report.detailed_files,
+        keep_languages,
+    )
 
     try:
         final_plans = ask_global_clean_plans(plans)
@@ -92,6 +98,21 @@ def run_clean_workflow(service: MediaService, config: ConfigManager) -> None:
 
     result = _execute_plans_with_progress(service, plans_to_execute)
     _render_clean_result(result)
+
+
+def _should_continue_after_audit(summary: AuditSummary) -> bool:
+    """Decide si el flujo debe continuar tras mostrar la auditoría."""
+
+    if summary.cancelled:
+        return False
+
+    if summary.report is None:
+        return False
+
+    should_continue = bool(questionary.confirm("¿Continuar con la planificación de limpieza?").ask())
+    if not should_continue:
+        show_warning("Limpieza cancelada.")
+    return should_continue
 
 
 def _ask_keep_languages(config: ConfigManager) -> Optional[List[str]]:

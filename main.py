@@ -54,11 +54,10 @@ _ensure_dependencies()
 # ── Imports seguros (clibaseapp ya está instalado) ────────────────
 from pathlib import Path
 
-from clibaseapp import CLIBaseApp, render_browse_result
+from clibaseapp import CLIBaseApp
 from core.config import DEFAULT_KEEP_LANGUAGES, load_media_root
 from services.media_service import MediaService
-from ui.components import render_audit_summary
-from ui.workflows import browse_media, run_clean_workflow
+from ui.workflows import run_clean_workflow
 
 
 class MediaToolsApp(CLIBaseApp):
@@ -67,8 +66,8 @@ class MediaToolsApp(CLIBaseApp):
     Hereda de CLIBaseApp, que proporciona automáticamente:
     Doctor, Configuración, Documentación, Actualizar y Salir.
 
-    Esta clase solo registra las 3 opciones de negocio de media-tools:
-    navegar, auditar y limpiar pistas multimedia.
+    Esta clase registra una utilidad de negocio integrada para navegar,
+    auditar y limpiar pistas multimedia dentro del mismo flujo.
     """
 
     def __init__(self) -> None:
@@ -95,25 +94,15 @@ class MediaToolsApp(CLIBaseApp):
 
     # ── Callbacks del menú (delegación pura) ──────────────────────
 
-    def _on_browse(self) -> None:
-        """Navegar biblioteca multimedia."""
-        render_browse_result(browse_media(self.config))
-
-    def _on_audit(self) -> None:
-        """Auditar archivos multimedia."""
-        render_audit_summary(self.service.audit(browse_media(self.config)))
-
     def _on_clean(self) -> None:
-        """Limpiar pistas de audio/subtítulos."""
+        """Ejecutar la utilidad integrada de limpieza de pistas."""
         run_clean_workflow(self.service, self.config)
 
     # ── Registro de menú ──────────────────────────────────────────
 
     def setup_commands(self) -> None:
         """Registra las opciones de negocio en el menú interactivo."""
-        self.register_menu_option("🎬 Navegar Biblioteca", "browse", self._on_browse)
-        self.register_menu_option("🧹 Limpiar Pistas", "clean", self._on_clean)
-        self.register_menu_option("🔍 Auditoría", "audit", self._on_audit)
+        self.register_menu_option("🧹 Limpieza de Pistas", "clean", self._on_clean)
 
 
 if __name__ == "__main__":
