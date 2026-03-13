@@ -39,7 +39,11 @@ class CleanResult:
 
 
 class MediaService:
-    """Servicio principal que orquesta toda la lógica de negocio multimedia."""
+    """Servicio principal que orquesta toda la lógica de negocio multimedia.
+
+    La clase solo recibe datos de entrada, coordina repositorio y servicios
+    especializados, y devuelve modelos puros listos para que la UI los renderice.
+    """
 
     def __init__(self) -> None:
         self.repo = MediaRepository()
@@ -47,7 +51,10 @@ class MediaService:
         self.clean_service = CleanService()
 
     def _resolve_files(self, result: BrowseResult) -> List[Path]:
-        """Resuelve una selección de archivo/directorio a archivos multimedia."""
+        """Resuelve una selección de archivo/directorio a archivos multimedia.
+
+        Si la selección ya es un fichero, evita escaneos innecesarios.
+        """
 
         if result.selection_type == "file":
             return [result.selected_path]
@@ -108,7 +115,11 @@ class MediaService:
         return max(0, initial_size - final_size)
 
     def execute_clean_plans(self, plans: List[CleanPlan]) -> CleanResult:
-        """Ejecuta múltiples planes y devuelve un resultado puro."""
+        """Ejecuta múltiples planes y devuelve un resultado puro.
+
+        El método agrega errores por archivo sin emitir salida por consola,
+        para que la capa de UI decida cómo mostrar cada incidencia.
+        """
 
         total_saved = 0
         failures: List[CleanFailure] = []

@@ -1,5 +1,8 @@
 """
 Workflows interactivos específicos de media-tools.
+
+Este módulo concentra toda la conversación con el usuario para que la
+capa `services/` permanezca libre de dependencias de interfaz.
 """
 
 from typing import List, Optional
@@ -37,14 +40,18 @@ def _format_bytes(size: int) -> str:
 
 
 def browse_media(config: ConfigManager) -> Optional[BrowseResult]:
-    """Abre el navegador interactivo de archivos multimedia."""
+    """Abre el navegador interactivo usando la raíz configurada para la app."""
 
     browser = BrowserMenu(file_extensions=VIDEO_EXTENSIONS, file_icon="🎬")
     return browser.browse(load_media_root(config))
 
 
 def run_clean_workflow(service: MediaService, config: ConfigManager) -> None:
-    """Ejecuta el flujo interactivo completo de limpieza de pistas."""
+    """Ejecuta el flujo interactivo completo de limpieza de pistas.
+
+    El workflow resuelve la configuración y el input del usuario, delega
+    las reglas de negocio al servicio y renderiza el resultado final.
+    """
 
     clear_screen()
     show_header("Limpiador de Pistas", "Inicio > Limpieza", icon="🧹")
@@ -88,7 +95,10 @@ def run_clean_workflow(service: MediaService, config: ConfigManager) -> None:
 
 
 def _ask_keep_languages(config: ConfigManager) -> Optional[List[str]]:
-    """Solicita idiomas extra a conservar para la ejecución actual."""
+    """Solicita idiomas extra a conservar para la ejecución actual.
+
+    Devuelve `None` si el usuario cancela el prompt inicial.
+    """
 
     keep_languages = load_keep_languages(config)
     extra_languages = questionary.text(
@@ -132,7 +142,11 @@ def _render_plan_summary(plans: List[CleanPlan]) -> List[CleanPlan]:
 
 
 def _execute_plans_with_progress(service: MediaService, plans: List[CleanPlan]) -> CleanResult:
-    """Ejecuta planes con barra de progreso y devuelve el resultado agregado."""
+    """Ejecuta planes con barra de progreso y devuelve el resultado agregado.
+
+    La captura de errores se realiza aquí para mantener el feedback visual
+    sincronizado con el archivo que se está procesando.
+    """
 
     total_saved = 0
     failures: List[CleanFailure] = []
@@ -163,7 +177,11 @@ def _execute_plans_with_progress(service: MediaService, plans: List[CleanPlan]) 
 
 
 def _render_clean_result(result: CleanResult) -> None:
-    """Renderiza el resultado final de la limpieza."""
+    """Renderiza el resultado final de la limpieza.
+
+    Si hubo errores parciales, los lista después del resumen para que el
+    usuario sepa qué archivos requieren revisión manual.
+    """
 
     clear_screen()
     show_header("✨ Limpieza Completada ✨", icon="🎉")

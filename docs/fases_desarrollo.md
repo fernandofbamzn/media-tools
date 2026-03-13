@@ -1,66 +1,58 @@
 # Fases de Desarrollo
 
-Roadmap funcional del proyecto con alcance y estado.
+Estado resumido del proyecto y de su hoja de ruta.
 
-## Fase 1 — Base del proyecto ✅
+## Estado actual
 
-**Objetivo**: fundaciones técnicas de la CLI.
+| Fase | Objetivo | Estado |
+| --- | --- | --- |
+| 1 | Base del proyecto y wiring inicial | Completada |
+| 2 | Navegación y auditoría | Completada |
+| 3 | Limpieza de pistas con revisión previa | Completada |
+| 4 | Optimización de vídeo | Pendiente |
+| 5 | Automatización y modo headless | Pendiente |
 
-Incluye:
+## Detalle por fase
 
-- estructura de carpetas por capas
-- comandos base y arranque
-- verificación inicial de dependencias
-- documentación técnica mínima
+### Fase 1. Base del proyecto
 
-**Estado**: completada.
+Incluyó:
 
-## Fase 2 — Navegación y auditoría ✅
+- estructura por capas,
+- entrypoint interactivo,
+- gestión de configuración,
+- documentación inicial.
 
-**Objetivo**: inspección fiable de bibliotecas multimedia.
+### Fase 2. Navegación y auditoría
 
-Incluye:
+Incluyó:
 
-- navegación interactiva de rutas
-- lectura de metadata de medios
-- auditoría de idiomas y códecs
-- detección preliminar de duplicados
+- navegación de archivos,
+- análisis de metadatos,
+- informes agregados,
+- detección de duplicados probables.
 
-**Estado**: completada.
+### Fase 3. Limpieza de pistas
 
-## Fase 3 — Lógica de negocio y Acciones sobre archivos 🚧
+Incluyó:
 
-**Objetivo**: ejecutar acciones reales de limpieza y organizar pistas sobre los archivos multimedia.
+- generación de planes de limpieza,
+- revisión interactiva,
+- remux con `mkvmerge`,
+- resumen final y cálculo de espacio recuperado.
 
-Incluye:
+### Fase 4. Optimización de vídeo
 
-- lógica para identificar pistas a conservar (ej: vídeo principal, audios predeterminados/español)
-- eliminación (demux/remux) de audios y subtítulos innecesarios usando `mkvmerge`/`ffmpeg`
-- resolución o aviso en caso de pistas conflictivas o duplicadas
-- informe de las acciones tomadas y ahorro de espacio en el archivo final
+Objetivos previstos:
 
-**Estado**: completada.
+- transcodificación opcional,
+- perfiles configurables,
+- estimación de ahorro.
 
-## Fase 4 — Optimización de vídeo 🔭
+### Fase 5. Automatización
 
-**Objetivo**: reducción de tamaño con control de calidad.
+Objetivos previstos:
 
-Incluye:
-
-- transcodificación opcional
-- perfiles configurables
-- estimación de ahorro de espacio
-
-**Estado**: futuro.
-
-## Fase 5 — Automatización / modo headless 🔭
-
-**Objetivo**: integración en scripts y pipelines.
-
-Incluye:
-
-- ejecución no interactiva
-- salida estructurada (JSON)
-- códigos de salida robustos para CI/CD
-
-**Estado**: futuro.
+- ejecución no interactiva,
+- salida JSON,
+- códigos de salida pensados para scripts y CI.

@@ -1,53 +1,61 @@
 # Reglas de Desarrollo
-Para el desarrollo de la aplicación CLI, debemos seguir la guia de desarrollo establecida en el archivo `docs/guia_desarrollo.md`.
 
-Normas para implementar cambios sin degradar calidad, seguridad ni mantenibilidad.
+Normas obligatorias para trabajar en `media-tools` con un criterio técnico uniforme.
 
-## 1) Principios de implementación
+## 1. Arquitectura
 
-- **Fail-fast**: validar precondiciones antes de actuar.
-- **Idempotencia**: una operación repetida no debe corromper resultados.
-- **No hardcoding**: rutas, perfiles y parámetros sensibles deben ser configurables.
-- **Cambios pequeños**: preferir iteraciones cortas y revisables.
+- `ui/` solo interactúa y renderiza.
+- `services/` contiene lógica de negocio reutilizable.
+- `data/` encapsula herramientas externas y acceso a filesystem.
+- `models/` contiene estructuras tipadas simples.
+- `main.py` solo hace wiring y callbacks.
 
-> Las responsabilidades por capa se documentan en `docs/arquitectura.md`.
+## 2. Configuración
 
-## 2) Estilo de código
+- reutilizar siempre `self.config` de `CLIBaseApp`,
+- no crear un segundo `ConfigManager`,
+- evitar rutas hardcodeadas.
 
-- Type hints obligatorios en APIs públicas.
-- Docstrings en clases y métodos públicos.
-- Funciones pequeñas y enfocadas (evitar >100 líneas salvo justificación clara).
-- Nombres explícitos de variables y funciones.
+## 3. Calidad de código
 
-## 3) Reglas por capa
+- type hints en firmas públicas,
+- docstrings en clases y funciones relevantes,
+- funciones pequeñas y con una sola responsabilidad,
+- nombres explícitos.
 
-- `ui/`: solo interacción y presentación.
-- `services/`: lógica de negocio reutilizable y testeable.
-- `data/`: acceso a recursos externos con patrón repositorio.
-- `models/`: estructuras de datos simples.
-- `core/`: configuración, excepciones y utilidades comunes.
+## 4. Seguridad operativa
 
-## 4) Seguridad operativa
+- no modificar archivos sin confirmación,
+- validar binarios y permisos antes de operar,
+- fallar pronto ante rutas inválidas o herramientas ausentes.
 
-- Ninguna acción destructiva sin confirmación explícita del usuario.
-- Validar permisos y disponibilidad de herramientas (`mkvmerge`, `ffmpeg`, `mediainfo`).
-- Evitar exponer información sensible en logs.
+## 5. Testing
 
-## 5) Calidad y validación
+Todo cambio relevante debe acompañarse de:
 
-Antes de integrar cambios:
+- tests del servicio afectado,
+- tests del repositorio o adaptador externo,
+- tests de UI o de flujo interactivo cuando haya interacción nueva,
+- actualización de docs si cambia el comportamiento visible.
 
-1. Ejecutar checks/tests disponibles.
-2. Verificar que no se rompe el flujo de capas.
-3. Actualizar documentación afectada.
-4. Registrar limitaciones o deuda técnica detectada.
+## 6. Ejemplo de decisión correcta
 
-## 6) Estrategia de cambio recomendada
+Correcto:
 
-Cuando una funcionalidad toca múltiples capas:
+```python
+summary = service.audit(selection)
+render_audit_summary(summary)
+```
 
-1. Modelos
-2. Repositorio (`data/`)
-3. Servicios
-4. UI
-5. CLI (`main.py`)
+Incorrecto:
+
+```python
+service.audit_and_print(selection)
+```
+
+## 7. Checklist rápido
+
+1. la capa correcta implementa el cambio,
+2. no se rompe el flujo de dependencias,
+3. los tests pasan,
+4. la documentación quedó alineada.

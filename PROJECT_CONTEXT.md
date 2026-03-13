@@ -1,35 +1,51 @@
-# Project Context
+# Contexto del Proyecto
 
 ## Propósito
 
-`media-tools` es una aplicación CLI para gestionar bibliotecas multimedia y preparar ediciones de forma segura y trazable.
+`media-tools` existe para ayudar a mantener bibliotecas multimedia grandes con una CLI segura, trazable y usable en servidores domésticos o autohospedados.
 
 ## Entorno objetivo
 
-- Linux (servidores domésticos y self-hosted).
-- Contenedores LXC/Proxmox.
-- Bibliotecas grandes montadas por NFS o bind mounts.
+- Linux como entorno principal de ejecución.
+- Contenedores LXC o hosts Proxmox.
+- Bibliotecas montadas mediante discos locales, bind mounts o NFS.
 
-## Stack técnico
+## Decisiones de diseño
 
-- Python 3
-- Typer (CLI)
-- Rich + Questionary (interfaz interactiva)
-- mkvmerge, ffmpeg y mediainfo (herramientas externas)
+- arquitectura por capas,
+- confirmación explícita antes de modificar archivos,
+- tipado estricto y modelos claros,
+- dependencia fuerte de herramientas externas bien conocidas (`mkvmerge`, `ffmpeg`, `mediainfo`),
+- configuración persistente reutilizando `ConfigManager` de `clibaseapp`.
 
-## Principios no negociables
+## Objetivos funcionales actuales
 
-- Arquitectura por capas: `UI → Services → Repository → Models`.
-- Confirmación explícita antes de cualquier acción destructiva.
-- Operaciones idempotentes y enfoque fail-fast.
-- Cero rutas o credenciales hardcodeadas.
+- inspeccionar archivos multimedia,
+- auditar idiomas y códecs,
+- detectar duplicados probables,
+- limpiar pistas innecesarias con revisión previa.
 
-## Navegación documental
+## No objetivos actuales
 
-Para detalles concretos consultar:
+- transcodificación masiva,
+- operación completamente headless,
+- integración con bases de datos externas,
+- reindexado de catálogos.
 
-- Requisitos: `docs/requisitos.md`
-- Arquitectura: `docs/arquitectura.md`
-- Reglas de desarrollo: `docs/dev_rules.md`
-- Roadmap: `docs/fases_desarrollo.md`
-- Manual de uso: `docs/manual.md`
+## Restricciones operativas
+
+- no romper la separación `ui -> services -> data -> models`,
+- no hardcodear rutas sensibles,
+- no escribir sobre archivos sin confirmación,
+- fallar pronto cuando falten binarios o permisos.
+
+## Escenario de uso representativo
+
+```text
+Biblioteca montada en /srv/media
+-> el operador audita una carpeta
+-> revisa idiomas detectados
+-> ajusta qué pistas conservar
+-> confirma el plan
+-> el remux se ejecuta con feedback de progreso
+```

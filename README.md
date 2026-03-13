@@ -1,53 +1,83 @@
 # media-tools
 
-CLI para analizar y planificar edición segura de archivos multimedia (MKV/MP4), orientada a bibliotecas grandes en Linux.
+`media-tools` es una CLI para inspeccionar bibliotecas multimedia, auditar pistas y preparar limpiezas seguras de archivos `MKV`, `MP4` y `M4V`.
 
-## Qué hace
+## Capacidades actuales
 
-- Inspección de archivos y pistas (audio/subtítulos).
-- Detección de duplicados.
-- Selección de idiomas.
-- Generación de auditorías e informes previos.
-- Preparación de cambios seguros (siempre con confirmación explícita).
+- Navega bibliotecas multimedia desde terminal.
+- Analiza metadatos de audio, vídeo y subtítulos con `mkvmerge`.
+- Genera informes de auditoría por idiomas y códecs.
+- Construye planes de limpieza de pistas.
+- Ejecuta cambios destructivos solo tras confirmación explícita.
 
-La interacción CLI vive en `ui/`, mientras que `services/` queda reservada para lógica de negocio pura.
+## Arquitectura en una línea
 
-## Estado del proyecto
+`main.py -> ui/ -> services/ -> data/ -> models/`
 
-La hoja de ruta por fases vive en `docs/fases_desarrollo.md`.
+La capa `ui/` contiene prompts, menús y renderizado. La capa `services/` contiene lógica pura y no imprime nada en consola.
 
 ## Inicio rápido
 
-1. Revisar requisitos del entorno en `docs/requisitos.md`.
-2. Revisar arquitectura en `docs/arquitectura.md`.
-3. Revisar reglas de desarrollo en `docs/dev_rules.md`.
-4. Usar la guía operativa en `docs/manual.md`.
+Crear entorno e instalar dependencias:
 
-## Estructura de documentación
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-- `PROJECT_CONTEXT.md`: contexto ejecutivo y decisiones de alto nivel.
-- `docs/requisitos.md`: dependencias del sistema y entorno Python.
-- `docs/arquitectura.md`: capas, responsabilidades y flujo técnico.
-- `docs/dev_rules.md`: normas de implementación y calidad.
-- `docs/fases_desarrollo.md`: roadmap por fases y estado.
-- `docs/manual.md`: uso operativo de la herramienta.
+Arrancar la aplicación:
 
+```bash
+python main.py
+```
 
-## Configuración de `media_root`
+## Configuración base
 
-La ruta base de la biblioteca multimedia se resuelve con esta prioridad:
+La raíz multimedia se resuelve con esta prioridad:
 
-1. Variable de entorno `MEDIA_TOOLS_MEDIA_ROOT`.
-2. Clave `media_root` en `~/.config/media-tools/config.json`, gestionada por la instancia `self.config` heredada de `CLIBaseApp`.
-3. Fallback explícito al directorio actual.
+1. variable de entorno `MEDIA_TOOLS_MEDIA_ROOT`,
+2. clave `media_root` en `~/.config/media-tools/config.json`,
+3. directorio actual como fallback.
 
 Ejemplo de `config.json`:
 
 ```json
 {
-  "media_root": "/srv/media"
+  "media_root": "/srv/media",
+  "keep_languages": ["spa", "eng", "es", "en"]
 }
 ```
 
-La ruta configurada debe existir, ser un directorio y tener permisos de lectura.
-Si la ruta configurada es inválida, se intenta el fallback y se reporta un error claro si también falla.
+## Ejemplos de uso habituales
+
+Abrir la app y navegar la biblioteca:
+
+```bash
+python main.py
+```
+
+Flujo recomendado dentro del menú:
+
+1. `Navegar Biblioteca`
+2. `Auditoría`
+3. `Limpiar Pistas`
+4. revisar el resumen
+5. confirmar cambios
+
+Configuración temporal por sesión:
+
+```bash
+set MEDIA_TOOLS_MEDIA_ROOT=D:\Media
+python main.py
+```
+
+## Documentación del proyecto
+
+- [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md): contexto de producto y restricciones.
+- [`docs/requisitos.md`](docs/requisitos.md): requisitos del sistema y del entorno Python.
+- [`docs/manual.md`](docs/manual.md): guía de uso paso a paso.
+- [`docs/arquitectura.md`](docs/arquitectura.md): capas, dependencias y flujos.
+- [`docs/dev_rules.md`](docs/dev_rules.md): reglas de implementación obligatorias.
+- [`docs/guia_desarrollo.md`](docs/guia_desarrollo.md): guía práctica para desarrollar sobre el proyecto.
+- [`docs/fases_desarrollo.md`](docs/fases_desarrollo.md): estado funcional y próximos hitos.

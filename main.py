@@ -20,7 +20,8 @@ def _ensure_dependencies() -> None:
 
     Si falta clibaseapp u otra dependencia, ejecuta pip install -r requirements.txt
     automáticamente. Esto permite que un git pull en producción funcione sin pasos
-    manuales adicionales.
+    manuales adicionales. El bootstrap ocurre antes de importar el framework
+    para evitar errores de import en el arranque.
     """
     required = ["clibaseapp", "rich", "questionary", "typer"]
     missing = [pkg for pkg in required if importlib.util.find_spec(pkg) is None]
@@ -71,6 +72,8 @@ class MediaToolsApp(CLIBaseApp):
     """
 
     def __init__(self) -> None:
+        """Inicializa defaults, doctor y servicios propios de media-tools."""
+
         super().__init__(app_name="media-tools", description="Media Tools CLI")
 
         # Configuración por defecto específica de media-tools

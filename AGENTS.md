@@ -200,7 +200,7 @@ Nunca romper este flujo.
 
 Evitar rutas como:
 
-/mnt/Filmoteca
+/srv/media
 
 Las rutas deben venir de configuración.
 
@@ -262,4 +262,3 @@ Nunca modificar todas las capas a la vez sin motivo.
 Si una modificación rompe la arquitectura, la modificación es incorrecta.
 
 La arquitectura del proyecto tiene prioridad sobre cualquier funcionalidad nueva.
-

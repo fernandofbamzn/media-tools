@@ -1,63 +1,109 @@
 # Manual de Uso
 
-Guía operativa para ejecutar `media-tools` de forma segura.
+Guía operativa de `media-tools` para uso diario.
 
 ## 1. Preparación
 
-1. Confirmar requisitos: `docs/requisitos.md`.
-2. Activar entorno virtual (si aplica).
-3. Verificar disponibilidad de binarios externos.
+1. Revisa [`requisitos.md`](requisitos.md).
+2. Activa el entorno virtual si aplica.
+3. Comprueba que `mkvmerge` está disponible.
 
-## 1.1 Configurar `media_root`
+## 2. Configurar `media_root`
 
-Antes de navegar o auditar, define la raíz de tu biblioteca:
+Opciones admitidas:
 
-- **Opción A (recomendada en terminal):** variable de entorno `MEDIA_TOOLS_MEDIA_ROOT`.
-- **Opción B (persistente):** `~/.config/media-tools/config.json` con clave `media_root`.
+- temporal: variable de entorno `MEDIA_TOOLS_MEDIA_ROOT`,
+- persistente: `~/.config/media-tools/config.json`.
 
 Ejemplo:
 
 ```json
 {
-  "media_root": "/srv/media"
+  "media_root": "/srv/media",
+  "keep_languages": ["spa", "eng", "es", "en"]
 }
 ```
 
-Validaciones aplicadas al cargar configuración:
+La carga valida que la ruta exista, sea directorio y tenga permisos de lectura. Si falla, la app prueba el directorio actual como fallback.
 
-- la ruta debe existir
-- debe ser directorio
-- debe tener permisos de lectura
-
-La configuración persistente la gestiona la instancia `self.config` heredada de `CLIBaseApp`.
-Si falla la ruta configurada, la CLI intenta el directorio actual como fallback explícito y muestra un error claro si tampoco es válido.
-
-## 2. Ejecución
-
-Comando principal:
+## 3. Arrancar la aplicación
 
 ```bash
-media-tools
+python main.py
 ```
 
-## 3. Flujo recomendado
+## 4. Menú principal
 
-1. Seleccionar ruta (archivo o carpeta).
-2. Ejecutar análisis de pistas.
-3. Revisar duplicados e idiomas detectados.
-4. Configurar cambios deseados.
-5. Revisar informe previo.
-6. Confirmar explícitamente antes de aplicar cambios.
+Opciones de negocio:
 
-## 4. Buenas prácticas operativas
+- `Navegar Biblioteca`
+- `Auditoría`
+- `Limpiar Pistas`
 
-- Empezar por carpetas pequeñas de prueba.
-- Conservar backups de material crítico.
-- Revisar el informe antes de confirmar.
-- Evitar operaciones destructivas en lotes grandes sin validación previa.
+Opciones heredadas de `clibaseapp`:
 
-## 5. Solución de problemas rápida
+- `Doctor`
+- `Config`
+- `Docs`
+- `Actualizar App`
 
-- Si faltan binarios (`mkvmerge`, `ffmpeg`, `mediainfo`), revisar instalación del sistema.
-- Si hay errores de permisos, validar usuario, grupo y montaje.
-- Si no se detectan archivos, comprobar extensión y ruta seleccionada.
+Nota: `Actualizar App` solo funciona si la herramienta se ejecuta desde un clon Git válido.
+
+## 5. Flujo de auditoría
+
+1. entra en `Auditoría`,
+2. selecciona un archivo o carpeta,
+3. revisa el árbol de pistas y el resumen global,
+4. identifica idiomas faltantes o duplicados probables.
+
+Ejemplo de uso:
+
+```text
+Inicio -> Auditoría
+-> seleccionar /srv/media/Peliculas
+-> revisar idiomas de audio y subtítulos
+```
+
+## 6. Flujo de limpieza
+
+1. entra en `Limpiar Pistas`,
+2. añade idiomas extra si hace falta,
+3. selecciona la carpeta o archivo,
+4. revisa el checklist global de pistas,
+5. revisa el resumen por archivo,
+6. confirma la operación destructiva,
+7. espera al remux y revisa el resultado final.
+
+Ejemplo de sesión:
+
+```text
+Idiomas a conservar: spa, eng
+Añadir para esta ejecución: ita
+Seleccionar carpeta: /srv/media/Series
+Revisar plan
+Confirmar cambios
+```
+
+## 7. Buenas prácticas operativas
+
+- empezar por un único archivo o carpeta pequeña,
+- conservar copia de seguridad si el material es crítico,
+- revisar siempre el resumen antes de confirmar,
+- no ejecutar cambios masivos sin una auditoría previa.
+
+## 8. Problemas frecuentes
+
+### No se encuentran archivos
+
+- revisa `media_root`,
+- confirma que la ruta contiene `mkv`, `mp4` o `m4v`,
+- comprueba permisos de lectura.
+
+### Falta `mkvmerge`
+
+- instala `mkvtoolnix`,
+- verifica el binario con `mkvmerge --version`.
+
+### La actualización no está disponible
+
+La opción `Actualizar App` mostrará un aviso si la app se instaló vía `pip` o desde un paquete sin repositorio Git.
