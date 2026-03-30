@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 """Entrypoint de Media Tools."""
-
+os.environ["LIBVA_DRIVER_NAME"] = "iHD"
 
 def _bootstrap() -> None:
     if os.getenv("CLIBASEAPP_SKIP_BOOTSTRAP") == "1":

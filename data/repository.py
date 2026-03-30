@@ -141,9 +141,17 @@ class MediaRepository:
 
     def _build_ffmpeg_command(self, plan: OptimizePlan, ffmpeg_args: List[str] | None = None) -> list[str]:
         args = ffmpeg_args or plan.profile.ffmpeg_args
+        # Extraemos parámetros globales de hardware si existen (deben ir antes de -i)
+        hw_init = []
+        if "-vaapi_device" in args:
+            idx = args.index("-vaapi_device")
+            # Cogemos el flag y su valor
+            hw_init = [args[idx], args[idx+1]]
+        
         return [
             "ffmpeg",
             "-y",
+            *hw_init, # <--- Se inyectan antes del -i
             "-analyzeduration",
             "200M",
             "-probesize",

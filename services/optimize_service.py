@@ -7,6 +7,24 @@ from models.schemas import MediaFile, OptimizationProfile, OptimizePlan
 
 DEFAULT_OPTIMIZATION_PROFILES = [
     OptimizationProfile(
+        id="h265-vaapi",
+        title="H.265 VAAPI (Hardware Intel)",
+        video_codec="hevc_vaapi",
+        audio_codec="libopus",
+        ffmpeg_args=[
+            "-vaapi_device", "/dev/dri/renderD128",
+            "-vf", "format=nv12,hwupload",
+            "-c:v", "hevc_vaapi",
+            "-qp", "25",
+            "-c:a", "libopus",
+            "-b:a", "96k",
+            "-c:s", "copy",
+            "-c:d", "copy",
+            "-c:t", "copy",
+        ],
+        estimated_ratio=0.70,
+    ),
+    OptimizationProfile(
         id="h265-opus",
         title="H.265/Opus ahorro",
         video_codec="libx265",
