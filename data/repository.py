@@ -139,6 +139,51 @@ class MediaRepository:
     def analyze_many(self, files: List[Path]) -> List[MediaFile]:
         return [self.analyze_file(f) for f in files]
 
+    def _build_ffmpeg_command(self, plan: OptimizePlan, ffmpeg_args: List[str] | None = None) -> list[str]:
+        args = ffmpeg_args or plan.profile.ffmpeg_args
+        return [
+            "ffmpeg",
+            "-y",
+            "-analyzeduration",
+            "200M",
+            "-probesize",
+            "200M",
+            "-i",
+            str(plan.media_file.path),
+            "-map",
+            "0",
+            "-map_metadata",
+            "0",
+            "-map_chapters",
+            "0",
+            *args,
+        ]
+
+    def _replace_audio_args(self, ffmpeg_args: List[str], codec: str, bitrate: str) -> List[str]:
+        replaced: List[str] = []
+        index = 0
+        while index < len(ffmpeg_args):
+            current = ffmpeg_args[index]
+            if current in {"-c:a", "-b:a"} and index + 1 < len(ffmpeg_args):
+                index += 2
+                continue
+            replaced.append(current)
+            index += 1
+
+        replaced.extend(["-c:a", codec, "-b:a", bitrate])
+        return replaced
+
+    def _is_opus_layout_failure(self, stderr: str, plan: OptimizePlan) -> bool:
+        if plan.profile.audio_codec != "libopus":
+            return False
+        lowered = stderr.lower()
+        markers = (
+            "invalid channel layout",
+            "mapping family",
+            "error while opening encoder",
+        )
+        return any(marker in lowered for marker in markers)
+
     def execute_remux(self, plan: CleanPlan) -> None:
         input_path = plan.media_file.path
         temp_path = input_path.with_name(f"{input_path.stem}_tmp{input_path.suffix}")
@@ -183,30 +228,39 @@ class MediaRepository:
         output_path = plan.output_path
         temp_output = output_path.with_name(f"{output_path.stem}.tmp{output_path.suffix}")
 
-        cmd = [
-            "ffmpeg",
-            "-y",
-            "-i",
-            str(input_path),
-            "-map",
-            "0",
-            "-map_metadata",
-            "0",
-            "-map_chapters",
-            "0",
-            *plan.profile.ffmpeg_args,
-            str(temp_output),
-        ]
+        cmd = self._build_ffmpeg_command(plan)
+        cmd.append(str(temp_output))
 
         try:
             subprocess.run(cmd, capture_output=True, text=True, check=True)
-        except FileNotFoundError as exc:
-            raise BinaryMissingError("No se encontro 'ffmpeg'.") from exc
         except subprocess.CalledProcessError as exc:
+            stderr = (exc.stderr or "").strip()
             if temp_output.exists():
                 temp_output.unlink()
-            stderr = (exc.stderr or "").strip()
-            raise ExternalToolError(f"Error al optimizar '{input_path.name}'. {stderr}") from exc
+
+            if self._is_opus_layout_failure(stderr, plan):
+                logger.warning(
+                    "Fallo codificando audio con Opus para '%s'. Reintentando con AAC.",
+                    input_path.name,
+                )
+                fallback_args = self._replace_audio_args(plan.profile.ffmpeg_args, "aac", "384k")
+                fallback_cmd = self._build_ffmpeg_command(plan, fallback_args)
+                fallback_cmd.append(str(temp_output))
+                try:
+                    subprocess.run(fallback_cmd, capture_output=True, text=True, check=True)
+                except subprocess.CalledProcessError as retry_exc:
+                    if temp_output.exists():
+                        temp_output.unlink()
+                    retry_stderr = (retry_exc.stderr or "").strip()
+                    raise ExternalToolError(
+                        f"Error al optimizar '{input_path.name}'. {retry_stderr}"
+                    ) from retry_exc
+                except FileNotFoundError as retry_exc:
+                    raise BinaryMissingError("No se encontro 'ffmpeg'.") from retry_exc
+            else:
+                raise ExternalToolError(f"Error al optimizar '{input_path.name}'. {stderr}") from exc
+        except FileNotFoundError as exc:
+            raise BinaryMissingError("No se encontro 'ffmpeg'.") from exc
 
         try:
             if output_path.exists():

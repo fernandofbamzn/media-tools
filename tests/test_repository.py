@@ -212,7 +212,20 @@ def test_execute_optimization_success(monkeypatch, tmp_path: Path) -> None:
     )
 
     def run_side_effect(command: list[str], capture_output: bool, text: bool, check: bool) -> None:
-        assert command[:8] == ["ffmpeg", "-y", "-i", str(input_path), "-map", "0", "-map_metadata", "0"]
+        assert command[:12] == [
+            "ffmpeg",
+            "-y",
+            "-analyzeduration",
+            "200M",
+            "-probesize",
+            "200M",
+            "-i",
+            str(input_path),
+            "-map",
+            "0",
+            "-map_metadata",
+            "0",
+        ]
         temp_output.write_bytes(b"x" * 600)
 
     monkeypatch.setattr(subprocess, "run", run_side_effect)
@@ -221,6 +234,74 @@ def test_execute_optimization_success(monkeypatch, tmp_path: Path) -> None:
 
     assert outcome.output_path == output_path
     assert outcome.bytes_saved == 400
+    assert output_path.exists()
+
+
+def test_execute_optimization_retries_with_aac_on_opus_layout_error(monkeypatch, tmp_path: Path) -> None:
+    repo = MediaRepository()
+    input_path = tmp_path / "movie.mkv"
+    input_path.write_bytes(b"x" * 1000)
+    output_path = tmp_path / "movie.optimized.mkv"
+    temp_output = tmp_path / "movie.optimized.tmp.mkv"
+
+    media_file = MediaFile(
+        path=input_path,
+        container="Matroska",
+        tracks=[
+            Track(id=0, codec="H.264", language="und", type="video"),
+            Track(id=1, codec="DTS", language="spa", type="audio", channels=6),
+        ],
+    )
+    profile = OptimizationProfile(
+        id="h265-opus",
+        title="H.265/Opus ahorro",
+        video_codec="libx265",
+        audio_codec="libopus",
+        ffmpeg_args=[
+            "-c:v",
+            "libx265",
+            "-preset",
+            "medium",
+            "-crf",
+            "28",
+            "-c:a",
+            "libopus",
+            "-b:a",
+            "96k",
+            "-c:s",
+            "copy",
+        ],
+        estimated_ratio=0.6,
+    )
+    plan = OptimizePlan(
+        media_file=media_file,
+        profile=profile,
+        output_path=output_path,
+        original_size=1000,
+        estimated_size=600,
+        can_optimize=True,
+    )
+
+    calls: list[list[str]] = []
+
+    def run_side_effect(command: list[str], capture_output: bool, text: bool, check: bool) -> None:
+        calls.append(command)
+        if len(calls) == 1:
+            raise subprocess.CalledProcessError(
+                returncode=1,
+                cmd=command,
+                stderr="Invalid channel layout 5.1(side) for specified mapping family -1.",
+            )
+        audio_index = command.index("-c:a")
+        assert command[audio_index : audio_index + 4] == ["-c:a", "aac", "-b:a", "384k"]
+        temp_output.write_bytes(b"x" * 550)
+
+    monkeypatch.setattr(subprocess, "run", run_side_effect)
+
+    outcome = repo.execute_optimization(plan)
+
+    assert len(calls) == 2
+    assert outcome.bytes_saved == 450
     assert output_path.exists()
 
 
