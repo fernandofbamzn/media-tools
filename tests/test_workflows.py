@@ -5,6 +5,7 @@ from clibaseapp import ConfigManager
 from clibaseapp.models import BrowseResult
 from models.schemas import ActionType, AuditReport, AuditSummary, CleanPlan, MediaFile, Track, TrackAction
 from services.media_service import CleanFailure, CleanResult
+from services.optimize_service import DEFAULT_OPTIMIZATION_PROFILES
 from ui import workflows
 
 
@@ -66,8 +67,6 @@ def _build_audit_summary(tmp_path: Path) -> AuditSummary:
 
 
 def test_run_clean_workflow_handles_browse_cancel(monkeypatch, tmp_path: Path) -> None:
-    """Prueba que se informa la cancelación al abortar la navegación."""
-
     service = Mock()
     config = _build_config(tmp_path)
     show_warning = Mock()
@@ -77,13 +76,11 @@ def test_run_clean_workflow_handles_browse_cancel(monkeypatch, tmp_path: Path) -
 
     workflows.run_clean_workflow(service, config)
 
-    show_warning.assert_called_with("Selección cancelada.")
+    show_warning.assert_called_with("Seleccion cancelada.")
     service.audit.assert_not_called()
 
 
 def test_run_clean_workflow_stops_when_audit_has_no_report(monkeypatch, tmp_path: Path) -> None:
-    """Prueba que el flujo no avanza si la auditoría no encuentra archivos."""
-
     service = Mock()
     config = _build_config(tmp_path)
     selection = BrowseResult(selected_path=tmp_path, selection_type="directory")
@@ -107,8 +104,6 @@ def test_run_clean_workflow_stops_when_audit_has_no_report(monkeypatch, tmp_path
 
 
 def test_run_clean_workflow_cancels_after_audit(monkeypatch, tmp_path: Path) -> None:
-    """Prueba que el usuario puede cancelar tras revisar la auditoría."""
-
     service = Mock()
     config = _build_config(tmp_path)
     selection = BrowseResult(selected_path=tmp_path, selection_type="directory")
@@ -125,15 +120,10 @@ def test_run_clean_workflow_cancels_after_audit(monkeypatch, tmp_path: Path) -> 
     workflows.run_clean_workflow(service, config)
 
     service.build_clean_plans_from_media_files.assert_not_called()
-    assert any(call.args == ("Limpieza cancelada.",) for call in show_warning.call_args_list)
+    assert any(call.args == ("Operacion cancelada.",) for call in show_warning.call_args_list)
 
 
-def test_run_clean_workflow_cancels_on_language_prompt(
-    monkeypatch,
-    tmp_path: Path,
-) -> None:
-    """Prueba la cancelación cuando se aborta el prompt de idiomas."""
-
+def test_run_clean_workflow_cancels_on_language_prompt(monkeypatch, tmp_path: Path) -> None:
     service = Mock()
     config = _build_config(tmp_path)
     selection = BrowseResult(selected_path=tmp_path, selection_type="directory")
@@ -154,8 +144,6 @@ def test_run_clean_workflow_cancels_on_language_prompt(
 
 
 def test_run_clean_workflow_reports_when_nothing_to_remove(monkeypatch, tmp_path: Path) -> None:
-    """Prueba que se informa cuando todos los planes ya están limpios."""
-
     service = Mock()
     config = _build_config(tmp_path)
     selection = BrowseResult(selected_path=tmp_path, selection_type="directory")
@@ -181,15 +169,10 @@ def test_run_clean_workflow_reports_when_nothing_to_remove(monkeypatch, tmp_path
         audit_summary.report.detailed_files,
         ["spa", "eng"],
     )
-    show_success.assert_called_with("Los archivos ya cumplen con la selección. Nada que borrar.")
+    show_success.assert_called_with("Los archivos ya cumplen con la seleccion. Nada que borrar.")
 
 
-def test_run_clean_workflow_stops_when_confirmation_is_rejected(
-    monkeypatch,
-    tmp_path: Path,
-) -> None:
-    """Prueba que la ejecución no arranca sin confirmación destructiva."""
-
+def test_run_clean_workflow_stops_when_confirmation_is_rejected(monkeypatch, tmp_path: Path) -> None:
     service = Mock()
     config = _build_config(tmp_path)
     selection = BrowseResult(selected_path=tmp_path, selection_type="directory")
@@ -224,8 +207,6 @@ def test_run_clean_workflow_stops_when_confirmation_is_rejected(
 
 
 def test_run_clean_workflow_renders_partial_failures(monkeypatch, tmp_path: Path) -> None:
-    """Prueba la ruta con errores parciales durante la limpieza."""
-
     service = Mock()
     config = _build_config(tmp_path)
     selection = BrowseResult(selected_path=tmp_path, selection_type="directory")
@@ -261,3 +242,74 @@ def test_run_clean_workflow_renders_partial_failures(monkeypatch, tmp_path: Path
     workflows.run_clean_workflow(service, config)
 
     render_clean_result.assert_called_once_with(result)
+
+
+def test_run_optimize_workflow_cancels_when_profile_prompt_returns_none(monkeypatch, tmp_path: Path) -> None:
+    service = Mock()
+    config = _build_config(tmp_path)
+    selection = BrowseResult(selected_path=tmp_path, selection_type="directory")
+    audit_summary = _build_audit_summary(tmp_path)
+    show_warning = Mock()
+
+    monkeypatch.setattr(workflows, "browse_media", Mock(return_value=selection))
+    monkeypatch.setattr(workflows, "show_warning", show_warning)
+    monkeypatch.setattr(workflows.questionary, "confirm", Mock(return_value=Mock(ask=Mock(return_value=True))))
+    monkeypatch.setattr(workflows, "_ask_optimization_profile", Mock(return_value=None))
+    service.audit.return_value = audit_summary
+
+    workflows.run_optimize_workflow(service, config)
+
+    show_warning.assert_called_with("Optimizacion cancelada.")
+
+
+def test_run_optimize_workflow_executes_and_can_replace_originals(monkeypatch, tmp_path: Path) -> None:
+    service = Mock()
+    config = _build_config(tmp_path)
+    selection = BrowseResult(selected_path=tmp_path, selection_type="directory")
+    audit_summary = _build_audit_summary(tmp_path)
+    profile = DEFAULT_OPTIMIZATION_PROFILES[0]
+    plan = Mock(
+        can_optimize=True,
+        original_size=1000,
+        estimated_size=600,
+        media_file=Mock(path=tmp_path / "movie.mkv"),
+        profile=profile,
+    )
+    result = Mock(
+        outputs=[Mock()],
+        skipped=[],
+        failures=[],
+        bytes_saved=400,
+        files_optimized=1,
+        files_skipped=0,
+        files_with_errors=0,
+    )
+
+    continue_prompt = Mock()
+    continue_prompt.ask.return_value = True
+    execute_prompt = Mock()
+    execute_prompt.ask.return_value = True
+    replace_prompt = Mock()
+    replace_prompt.ask.return_value = True
+
+    monkeypatch.setattr(workflows, "browse_media", Mock(return_value=selection))
+    monkeypatch.setattr(
+        workflows.questionary,
+        "confirm",
+        Mock(side_effect=[continue_prompt, execute_prompt, replace_prompt]),
+    )
+    monkeypatch.setattr(workflows, "_ask_optimization_profile", Mock(return_value=profile))
+    monkeypatch.setattr(workflows, "render_optimize_plan_summary", Mock(return_value=[plan]))
+    monkeypatch.setattr(workflows, "_execute_optimize_plans_with_progress", Mock(return_value=result))
+    monkeypatch.setattr(workflows, "_render_optimize_result", Mock())
+    service.audit.return_value = audit_summary
+    service.build_optimize_plans_from_media_files.return_value = [plan]
+    service.replace_originals_with_optimized.return_value = []
+
+    workflows.run_optimize_workflow(service, config)
+
+    service.build_optimize_plans_from_media_files.assert_called_once_with(
+        audit_summary.report.detailed_files,
+        profile_id=profile.id,
+    )
+    service.replace_originals_with_optimized.assert_called_once_with(result.outputs)

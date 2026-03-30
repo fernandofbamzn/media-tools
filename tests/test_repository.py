@@ -8,12 +8,10 @@ import pytest
 from clibaseapp.exceptions import BinaryMissingError, ExternalToolError
 from core.exceptions import InvalidMediaMetadataError
 from data.repository import MediaRepository
-from models.schemas import ActionType, CleanPlan, MediaFile, Track, TrackAction
+from models.schemas import ActionType, CleanPlan, MediaFile, OptimizationProfile, OptimizePlan, Track, TrackAction
 
 
 def test_analyze_many_delegates_to_analyze_file(tmp_path: Path) -> None:
-    """Prueba que analyze_many procesa todos los archivos solicitados."""
-
     repo = MediaRepository()
     files = [tmp_path / "one.mkv", tmp_path / "two.mkv"]
     analyzed = [
@@ -29,10 +27,16 @@ def test_analyze_many_delegates_to_analyze_file(tmp_path: Path) -> None:
 
 
 def test_analyze_file_success(monkeypatch, mock_mkvmerge_output: dict, tmp_path: Path) -> None:
-    """Prueba el análisis exitoso de un archivo usando mkvmerge."""
-
     repo = MediaRepository()
     test_file = tmp_path / "test.mkv"
+    repo._run_ffprobe = Mock(
+        return_value=[
+            {"codec_type": "video", "bit_rate": "1500000"},
+            {"codec_type": "audio", "bit_rate": "192000", "tags": {"title": "Castellano", "language": "es-ES"}},
+            {"codec_type": "audio", "bit_rate": "384000", "tags": {"title": "English 5.1", "language": "en"}},
+            {"codec_type": "subtitle", "tags": {"title": "Forzados", "language": "es-ES"}},
+        ]
+    )
 
     monkeypatch.setattr(
         subprocess,
@@ -53,11 +57,12 @@ def test_analyze_file_success(monkeypatch, mock_mkvmerge_output: dict, tmp_path:
     assert audio_spa.language == "spa"
     assert audio_spa.channels == 2
     assert audio_spa.codec == "AAC"
+    assert audio_spa.track_name == "Castellano"
+    assert audio_spa.language_ietf == "es-ES"
+    assert audio_spa.bitrate == 192000
 
 
 def test_analyze_file_binary_missing(monkeypatch, tmp_path: Path) -> None:
-    """Prueba el comportamiento cuando mkvmerge no está en PATH."""
-
     repo = MediaRepository()
     test_file = tmp_path / "test.mkv"
 
@@ -66,13 +71,11 @@ def test_analyze_file_binary_missing(monkeypatch, tmp_path: Path) -> None:
 
     monkeypatch.setattr(subprocess, "run", raise_missing)
 
-    with pytest.raises(BinaryMissingError, match="No se encontró 'mkvmerge'"):
+    with pytest.raises(BinaryMissingError, match="No se encontro 'mkvmerge'"):
         repo.analyze_file(test_file)
 
 
 def test_analyze_file_execution_error(monkeypatch, tmp_path: Path) -> None:
-    """Prueba un código de salida diferente de 0 de mkvmerge."""
-
     repo = MediaRepository()
     test_file = tmp_path / "test.mkv"
 
@@ -90,8 +93,6 @@ def test_analyze_file_execution_error(monkeypatch, tmp_path: Path) -> None:
 
 
 def test_analyze_file_invalid_json(monkeypatch, tmp_path: Path) -> None:
-    """Prueba la respuesta cuando mkvmerge devuelve un JSON inválido."""
-
     repo = MediaRepository()
     test_file = tmp_path / "test.mkv"
 
@@ -101,13 +102,11 @@ def test_analyze_file_invalid_json(monkeypatch, tmp_path: Path) -> None:
         Mock(return_value=Mock(stdout="Not a JSON output", returncode=0)),
     )
 
-    with pytest.raises(InvalidMediaMetadataError, match="JSON inválido de mkvmerge"):
+    with pytest.raises(InvalidMediaMetadataError, match="JSON invalido de mkvmerge"):
         repo.analyze_file(test_file)
 
 
 def test_execute_remux_success(monkeypatch, tmp_path: Path) -> None:
-    """Prueba que execute_remux genera el comando esperado y reemplaza el archivo."""
-
     repo = MediaRepository()
     input_path = tmp_path / "movie.mkv"
     input_path.write_bytes(b"original")
@@ -154,8 +153,6 @@ def test_execute_remux_success(monkeypatch, tmp_path: Path) -> None:
 
 
 def test_execute_remux_cleans_temp_file_on_command_error(monkeypatch, tmp_path: Path) -> None:
-    """Prueba que el archivo temporal se elimina si mkvmerge falla."""
-
     repo = MediaRepository()
     input_path = tmp_path / "movie.mkv"
     input_path.write_bytes(b"original")
@@ -183,3 +180,63 @@ def test_execute_remux_cleans_temp_file_on_command_error(monkeypatch, tmp_path: 
 
     assert input_path.exists()
     assert not temp_path.exists()
+
+
+def test_execute_optimization_success(monkeypatch, tmp_path: Path) -> None:
+    repo = MediaRepository()
+    input_path = tmp_path / "movie.mkv"
+    input_path.write_bytes(b"x" * 1000)
+    output_path = tmp_path / "movie.optimized.mkv"
+    temp_output = tmp_path / "movie.optimized.tmp.mkv"
+
+    media_file = MediaFile(
+        path=input_path,
+        container="Matroska",
+        tracks=[Track(id=0, codec="H.264", language="und", type="video")],
+    )
+    profile = OptimizationProfile(
+        id="h265-opus",
+        title="H.265/Opus ahorro",
+        video_codec="libx265",
+        audio_codec="libopus",
+        ffmpeg_args=["-c:v", "libx265", "-c:a", "libopus", "-c:s", "copy"],
+        estimated_ratio=0.6,
+    )
+    plan = OptimizePlan(
+        media_file=media_file,
+        profile=profile,
+        output_path=output_path,
+        original_size=1000,
+        estimated_size=600,
+        can_optimize=True,
+    )
+
+    def run_side_effect(command: list[str], capture_output: bool, text: bool, check: bool) -> None:
+        assert command[:8] == ["ffmpeg", "-y", "-i", str(input_path), "-map", "0", "-map_metadata", "0"]
+        temp_output.write_bytes(b"x" * 600)
+
+    monkeypatch.setattr(subprocess, "run", run_side_effect)
+
+    outcome = repo.execute_optimization(plan)
+
+    assert outcome.output_path == output_path
+    assert outcome.bytes_saved == 400
+    assert output_path.exists()
+
+
+def test_replace_original_with_output_replaces_original(tmp_path: Path) -> None:
+    repo = MediaRepository()
+    input_path = tmp_path / "movie.mkv"
+    output_path = tmp_path / "movie.optimized.mkv"
+    input_path.write_bytes(b"old")
+    output_path.write_bytes(b"new")
+
+    repo.replace_original_with_output(
+        Mock(
+            input_path=input_path,
+            output_path=output_path,
+        )
+    )
+
+    assert input_path.read_bytes() == b"new"
+    assert not output_path.exists()

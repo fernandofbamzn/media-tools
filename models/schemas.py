@@ -1,7 +1,4 @@
-"""
-Modelos de datos específicos de media-tools.
-Los modelos genéricos (BrowseResult, DoctorCheck, DoctorResult) vienen de clibaseapp.
-"""
+"""Modelos de datos especificos de media-tools."""
 
 from dataclasses import dataclass, field
 from enum import Enum
@@ -12,19 +9,29 @@ from typing import Dict, List, Optional
 @dataclass
 class Track:
     """Representa una pista multimedia."""
+
     id: int
     codec: str
     language: str
     type: str
     name: str = ""
+    track_name: str = ""
+    title: str = ""
+    language_ietf: str = ""
     channels: Optional[int] = None
+    bitrate: Optional[int] = None
     default: bool = False
     forced: bool = False
+
+    @property
+    def label_name(self) -> str:
+        return self.track_name or self.title or self.name
 
 
 @dataclass
 class MediaFile:
     """Representa un archivo multimedia analizado."""
+
     path: Path
     container: str
     tracks: List[Track] = field(default_factory=list)
@@ -44,7 +51,8 @@ class MediaFile:
 
 @dataclass
 class AuditReport:
-    """Resultado agregado de auditoría multimedia."""
+    """Resultado agregado de auditoria multimedia."""
+
     total_files: int
     audio_languages: Dict[str, int]
     subtitle_languages: Dict[str, int]
@@ -58,7 +66,8 @@ class AuditReport:
 
 @dataclass
 class AuditSummary:
-    """Resultado de ejecución de auditoría para capa de presentación."""
+    """Resultado de ejecucion de auditoria para la capa de presentacion."""
+
     cancelled: bool
     selected_path: Optional[Path]
     selection_type: Optional[str]
@@ -68,13 +77,15 @@ class AuditSummary:
 
 class ActionType(Enum):
     """Acciones a realizar sobre una pista."""
+
     KEEP = "keep"
     REMOVE = "remove"
 
 
 @dataclass
 class TrackAction:
-    """Acción planificada para una pista concreta."""
+    """Accion planificada para una pista concreta."""
+
     track: Track
     action: ActionType
     reason: str = ""
@@ -83,6 +94,7 @@ class TrackAction:
 @dataclass
 class CleanPlan:
     """Plan de limpieza proyectado para un archivo."""
+
     media_file: MediaFile
     track_actions: List[TrackAction]
     keep_languages: List[str]
@@ -94,3 +106,61 @@ class CleanPlan:
     @property
     def tracks_to_remove(self) -> List[TrackAction]:
         return [t for t in self.track_actions if t.action == ActionType.REMOVE]
+
+
+@dataclass(frozen=True)
+class OptimizationProfile:
+    """Perfil declarativo de optimizacion."""
+
+    id: str
+    title: str
+    video_codec: str
+    audio_codec: str
+    ffmpeg_args: List[str]
+    estimated_ratio: float
+
+
+@dataclass
+class OptimizePlan:
+    """Plan de optimizacion para un archivo."""
+
+    media_file: MediaFile
+    profile: OptimizationProfile
+    output_path: Path
+    original_size: int
+    estimated_size: int
+    can_optimize: bool
+    skip_reason: str = ""
+
+
+@dataclass
+class OptimizeOutcome:
+    """Resultado individual de una optimizacion."""
+
+    input_path: Path
+    output_path: Path
+    original_size: int
+    optimized_size: int
+    bytes_saved: int
+
+
+@dataclass
+class OptimizeFailure:
+    """Fallo durante la optimizacion."""
+
+    file_path: Path
+    message: str
+
+
+@dataclass
+class OptimizeResult:
+    """Resultado agregado de optimizacion."""
+
+    files_processed: int
+    files_optimized: int
+    files_skipped: int
+    files_with_errors: int
+    bytes_saved: int
+    outputs: List[OptimizeOutcome] = field(default_factory=list)
+    skipped: List[OptimizePlan] = field(default_factory=list)
+    failures: List[OptimizeFailure] = field(default_factory=list)

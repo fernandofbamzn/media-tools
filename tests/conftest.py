@@ -15,6 +15,11 @@ for import_path in (MEDIA_TOOLS_ROOT, CLIBASEAPP_SRC):
 
 from models.schemas import MediaFile
 
+
+@pytest.fixture(autouse=True)
+def isolated_xdg_config_home(monkeypatch, tmp_path: Path):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+
 @pytest.fixture
 def mock_mkvmerge_output():
     """Provides a sample valid JSON output from mkvmerge -J."""

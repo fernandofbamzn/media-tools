@@ -2,13 +2,11 @@ from pathlib import Path
 from unittest.mock import Mock
 
 from clibaseapp.models import BrowseResult
-from models.schemas import ActionType, AuditReport, CleanPlan, MediaFile, Track, TrackAction
+from models.schemas import ActionType, AuditReport, CleanPlan, MediaFile, OptimizeOutcome, Track, TrackAction
 from services.media_service import CleanResult, MediaService
 
 
 def test_audit_cancelled_selection() -> None:
-    """Prueba que una selección cancelada devuelve un resumen cancelado."""
-
     service = MediaService()
 
     result = service.audit(None)
@@ -19,8 +17,6 @@ def test_audit_cancelled_selection() -> None:
 
 
 def test_audit_without_files() -> None:
-    """Prueba que una selección vacía no intenta analizar archivos."""
-
     service = MediaService()
     selection = BrowseResult(selected_path=Path("/library"), selection_type="directory")
     service._resolve_files = Mock(return_value=[])
@@ -35,8 +31,6 @@ def test_audit_without_files() -> None:
 
 
 def test_audit_builds_report_from_analyzed_files(sample_media_files) -> None:
-    """Prueba que audit coordina repositorio y servicio de auditoría."""
-
     service = MediaService()
     selection = BrowseResult(selected_path=Path("/library"), selection_type="directory")
     report = AuditReport(
@@ -63,8 +57,6 @@ def test_audit_builds_report_from_analyzed_files(sample_media_files) -> None:
 
 
 def test_build_clean_plans_returns_plan_per_analyzed_file() -> None:
-    """Prueba que build_clean_plans devuelve un plan por archivo analizado."""
-
     service = MediaService()
     selection = BrowseResult(selected_path=Path("/library"), selection_type="directory")
     media_file = MediaFile(
@@ -88,8 +80,6 @@ def test_build_clean_plans_returns_plan_per_analyzed_file() -> None:
 
 
 def test_build_clean_plans_from_media_files_reuses_analysis() -> None:
-    """Prueba que se pueden generar planes sin relanzar la auditoría."""
-
     service = MediaService()
     media_file = MediaFile(
         path=Path("/library/movie.mkv"),
@@ -112,25 +102,11 @@ def test_build_clean_plans_from_media_files_reuses_analysis() -> None:
 
 
 def test_execute_clean_plans_collects_failures(tmp_path: Path) -> None:
-    """Prueba que la ejecución agregada conserva bytes y errores."""
-
     service = MediaService()
     plans = [
-        CleanPlan(
-            media_file=MediaFile(path=tmp_path / "one.mkv", container="Matroska"),
-            track_actions=[],
-            keep_languages=["spa"],
-        ),
-        CleanPlan(
-            media_file=MediaFile(path=tmp_path / "two.mkv", container="Matroska"),
-            track_actions=[],
-            keep_languages=["spa"],
-        ),
-        CleanPlan(
-            media_file=MediaFile(path=tmp_path / "three.mkv", container="Matroska"),
-            track_actions=[],
-            keep_languages=["spa"],
-        ),
+        CleanPlan(media_file=MediaFile(path=tmp_path / "one.mkv", container="Matroska"), track_actions=[], keep_languages=["spa"]),
+        CleanPlan(media_file=MediaFile(path=tmp_path / "two.mkv", container="Matroska"), track_actions=[], keep_languages=["spa"]),
+        CleanPlan(media_file=MediaFile(path=tmp_path / "three.mkv", container="Matroska"), track_actions=[], keep_languages=["spa"]),
     ]
     service.execute_clean_plan = Mock(side_effect=[120, RuntimeError("boom"), 30])
 
@@ -143,3 +119,55 @@ def test_execute_clean_plans_collects_failures(tmp_path: Path) -> None:
     assert len(result.failures) == 1
     assert result.failures[0].file_path == plans[1].media_file.path
     assert result.failures[0].message == "boom"
+
+
+def test_build_optimize_plans_from_media_files_returns_supported_and_skipped(tmp_path: Path) -> None:
+    service = MediaService()
+    supported = MediaFile(
+        path=tmp_path / "one.mkv",
+        container="Matroska",
+        tracks=[Track(id=0, codec="H.264", language="und", type="video")],
+    )
+    skipped = MediaFile(
+        path=tmp_path / "two.mkv",
+        container="Matroska",
+        tracks=[
+            Track(id=0, codec="H.264", language="und", type="video"),
+            Track(id=1, codec="H.264", language="und", type="video"),
+        ],
+    )
+    supported.path.write_bytes(b"x" * 100)
+    skipped.path.write_bytes(b"x" * 100)
+
+    plans = service.build_optimize_plans_from_media_files([supported, skipped])
+
+    assert len(plans) == 2
+    assert plans[0].can_optimize is True
+    assert plans[1].can_optimize is False
+
+
+def test_execute_optimize_plans_collects_outputs_skips_and_failures(tmp_path: Path) -> None:
+    service = MediaService()
+    plans = [
+        Mock(can_optimize=True, media_file=Mock(path=tmp_path / "one.mkv")),
+        Mock(can_optimize=False, media_file=Mock(path=tmp_path / "two.mkv")),
+        Mock(can_optimize=True, media_file=Mock(path=tmp_path / "three.mkv")),
+    ]
+    output = OptimizeOutcome(
+        input_path=tmp_path / "one.mkv",
+        output_path=tmp_path / "one.optimized.mkv",
+        original_size=1000,
+        optimized_size=600,
+        bytes_saved=400,
+    )
+    service.execute_optimize_plan = Mock(side_effect=[output, RuntimeError("boom")])
+
+    result = service.execute_optimize_plans(plans)
+
+    assert result.files_processed == 3
+    assert result.files_optimized == 1
+    assert result.files_skipped == 1
+    assert result.files_with_errors == 1
+    assert result.bytes_saved == 400
+    assert result.outputs == [output]
+    assert result.skipped == [plans[1]]
