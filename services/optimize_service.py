@@ -25,6 +25,24 @@ DEFAULT_OPTIMIZATION_PROFILES = [
         estimated_ratio=0.70,
     ),
     OptimizationProfile(
+        id="h265-vaapi-compact",
+        title="H.265 VAAPI Compacto (<10GB)",
+        video_codec="hevc_vaapi",
+        audio_codec="libopus", 
+        ffmpeg_args=[
+            "-vaapi_device", "/dev/dri/renderD128",
+            "-vf", "format=nv12,hwupload",
+            "-c:v", "hevc_vaapi",
+            "-qp", "31",  
+            "-c:a", "aac",
+            "-b:a", "192k", 
+            "-c:s", "copy",
+            "-c:d", "copy",
+            "-c:t", "copy",
+        ],
+        estimated_ratio=0.35, # Reflejamos el ahorro real esperado (~10GB)
+    ),
+    OptimizationProfile(
         id="h265-opus",
         title="H.265/Opus ahorro",
         video_codec="libx265",
