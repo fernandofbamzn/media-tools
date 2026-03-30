@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 """Entrypoint de Media Tools."""
@@ -27,7 +28,20 @@ def _bootstrap() -> None:
 
 _bootstrap()
 
-from clibaseapp import CLIBaseApp, MenuAction
+try:
+    from clibaseapp import CLIBaseApp, MenuAction
+except ImportError:
+    from clibaseapp import CLIBaseApp
+
+    @dataclass
+    class MenuAction:
+        id: str
+        title: str
+        handler: object
+        order: int = 100
+        visible: object = None
+        enabled: object = None
+        status_suffix: object = None
 from core.config import DEFAULT_KEEP_LANGUAGES, load_media_root
 from services.media_service import MediaService
 from ui.workflows import run_clean_workflow, run_optimize_workflow
@@ -58,9 +72,16 @@ class MediaToolsApp(CLIBaseApp):
     def _on_optimize(self) -> None:
         run_optimize_workflow(self.service, self.config)
 
+    def _register_action_compat(self, action: MenuAction) -> None:
+        register_menu_action = getattr(self, "register_menu_action", None)
+        if callable(register_menu_action):
+            register_menu_action(action)
+            return
+        self.register_menu_option(action.title, action.id, action.handler)
+
     def setup_commands(self) -> None:
         self._doctor_paths = {"media_root": load_media_root(self.config)}
-        self.register_menu_action(
+        self._register_action_compat(
             MenuAction(
                 id="clean",
                 title="🧹 Limpieza de Pistas",
@@ -69,7 +90,7 @@ class MediaToolsApp(CLIBaseApp):
                 status_suffix=self._media_root_status,
             )
         )
-        self.register_menu_action(
+        self._register_action_compat(
             MenuAction(
                 id="optimize",
                 title="⚙️ Optimizacion de Tamano",
