@@ -305,6 +305,54 @@ def test_execute_optimization_retries_with_aac_on_opus_layout_error(monkeypatch,
     assert output_path.exists()
 
 
+def test_build_ffmpeg_command_moves_vaapi_device_before_input(tmp_path: Path) -> None:
+    repo = MediaRepository()
+    input_path = tmp_path / "movie.mkv"
+    media_file = MediaFile(
+        path=input_path,
+        container="Matroska",
+        tracks=[Track(id=0, codec="H.264", language="und", type="video")],
+    )
+    profile = OptimizationProfile(
+        id="h265-vaapi",
+        title="H.265 VAAPI",
+        video_codec="hevc_vaapi",
+        audio_codec="aac",
+        ffmpeg_args=[
+            "-vaapi_device",
+            "/dev/dri/renderD128",
+            "-vf",
+            "format=nv12,hwupload",
+            "-c:v",
+            "hevc_vaapi",
+        ],
+        estimated_ratio=0.7,
+    )
+    plan = OptimizePlan(
+        media_file=media_file,
+        profile=profile,
+        output_path=tmp_path / "movie.optimized.mkv",
+        original_size=1000,
+        estimated_size=700,
+        can_optimize=True,
+    )
+
+    command = repo._build_ffmpeg_command(plan)
+
+    assert command[:9] == [
+        "ffmpeg",
+        "-y",
+        "-vaapi_device",
+        "/dev/dri/renderD128",
+        "-analyzeduration",
+        "200M",
+        "-probesize",
+        "200M",
+        "-i",
+    ]
+    assert command.count("-vaapi_device") == 1
+
+
 def test_replace_original_with_output_replaces_original(tmp_path: Path) -> None:
     repo = MediaRepository()
     input_path = tmp_path / "movie.mkv"

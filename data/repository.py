@@ -140,18 +140,13 @@ class MediaRepository:
         return [self.analyze_file(f) for f in files]
 
     def _build_ffmpeg_command(self, plan: OptimizePlan, ffmpeg_args: List[str] | None = None) -> list[str]:
-        args = ffmpeg_args or plan.profile.ffmpeg_args
-        # Extraemos parámetros globales de hardware si existen (deben ir antes de -i)
-        hw_init = []
-        if "-vaapi_device" in args:
-            idx = args.index("-vaapi_device")
-            # Cogemos el flag y su valor
-            hw_init = [args[idx], args[idx+1]]
-        
+        args = plan.profile.ffmpeg_args if ffmpeg_args is None else ffmpeg_args
+        hw_init, codec_args = self._split_global_ffmpeg_args(args)
+
         return [
             "ffmpeg",
             "-y",
-            *hw_init, # <--- Se inyectan antes del -i
+            *hw_init,
             "-analyzeduration",
             "200M",
             "-probesize",
@@ -164,8 +159,22 @@ class MediaRepository:
             "0",
             "-map_chapters",
             "0",
-            *args,
+            *codec_args,
         ]
+
+    def _split_global_ffmpeg_args(self, ffmpeg_args: List[str]) -> tuple[List[str], List[str]]:
+        globals_before_input: List[str] = []
+        remaining_args: List[str] = []
+        index = 0
+        while index < len(ffmpeg_args):
+            current = ffmpeg_args[index]
+            if current == "-vaapi_device" and index + 1 < len(ffmpeg_args):
+                globals_before_input.extend(ffmpeg_args[index : index + 2])
+                index += 2
+                continue
+            remaining_args.append(current)
+            index += 1
+        return globals_before_input, remaining_args
 
     def _replace_audio_args(self, ffmpeg_args: List[str], codec: str, bitrate: str) -> List[str]:
         replaced: List[str] = []

@@ -19,7 +19,7 @@ from clibaseapp import (
     show_warning,
 )
 from core.config import load_keep_languages, load_media_root
-from models.schemas import AuditSummary, CleanPlan, OptimizationProfile, OptimizePlan
+from models.schemas import AuditSummary, CleanPlan, MediaFile, OptimizationProfile, OptimizePlan
 from services.media_service import (
     CleanFailure,
     CleanResult,
@@ -28,20 +28,16 @@ from services.media_service import (
     OptimizeResult,
     VIDEO_EXTENSIONS,
 )
+from services.optimize_service import CUSTOM_OPTIMIZATION_PROFILE
 from ui.clean_menu import ask_global_clean_plans
-from ui.components import render_audit_summary, render_optimize_plan_summary
+from ui.components import format_bytes, render_audit_summary, render_optimize_plan_summary
 
 
 def _format_bytes(size: int) -> str:
     negative = size < 0
-    size = abs(size)
-    for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if size < 1024.0:
-            prefix = "-" if negative else ""
-            return f"{prefix}{size:3.1f} {unit}"
-        size /= 1024.0
-    prefix = "-" if negative else ""
-    return f"{prefix}{size:.1f} PB"
+    if negative:
+        return f"-{format_bytes(abs(size))}"
+    return format_bytes(size)
 
 
 def browse_media(config: ConfigManager) -> Optional[BrowseResult]:
@@ -105,14 +101,14 @@ def run_optimize_workflow(service: MediaService, config: ConfigManager) -> None:
     if not _should_continue_after_audit(audit_summary, "optimizacion"):
         return
 
-    profile = _ask_optimization_profile(service)
+    profile = _ask_optimization_profile(service, audit_summary.report.detailed_files)
     if profile is None:
         show_warning("Optimizacion cancelada.")
         return
 
     plans = service.build_optimize_plans_from_media_files(
         audit_summary.report.detailed_files,
-        profile_id=profile.id,
+        profile=profile,
     )
     executable_plans = render_optimize_plan_summary(plans)
     if not executable_plans:
@@ -167,13 +163,49 @@ def _ask_keep_languages(config: ConfigManager) -> Optional[List[str]]:
     ]
 
 
-def _ask_optimization_profile(service: MediaService) -> Optional[OptimizationProfile]:
+def _ask_optimization_profile(
+    service: MediaService,
+    media_files: List[MediaFile],
+) -> Optional[OptimizationProfile]:
     profiles = service.list_optimization_profiles()
     choices = [
         questionary.Choice(f"{profile.title} ({profile.id})", value=profile)
         for profile in profiles
     ]
-    return questionary.select("Selecciona un perfil de optimizacion:", choices=choices).ask()
+    selected = questionary.select("Selecciona un perfil de optimizacion:", choices=choices).ask()
+    if selected is None:
+        return None
+    if selected.id != CUSTOM_OPTIMIZATION_PROFILE.id:
+        return selected
+    return _ask_custom_optimization_profile(service, media_files)
+
+
+def _ask_custom_optimization_profile(
+    service: MediaService,
+    media_files: List[MediaFile],
+) -> Optional[OptimizationProfile]:
+    recommendation_set = service.build_custom_optimization_recommendations(media_files)
+    if recommendation_set is None or not recommendation_set.options:
+        show_warning("No hay archivos aptos para construir un perfil custom.")
+        return None
+
+    show_info("Perfil custom guiado")
+    show_info(recommendation_set.context)
+    show_info("El perfil elegido se aplicara a toda la seleccion en esta ejecucion.")
+
+    choices = []
+    for option in recommendation_set.options:
+        prefix = "[Recomendado] " if option.recommended else ""
+        label = (
+            f"{prefix}{option.profile.title} | ~{_format_bytes(option.estimated_size)} "
+            f"({option.estimated_ratio:.0%} del original) | "
+            f"ahorro ~{_format_bytes(option.estimated_savings)} | "
+            f"coste: {option.profile.tradeoffs}"
+        )
+        choices.append(questionary.Choice(label, value=option.profile))
+        show_info(f"   {option.profile.description}")
+
+    return questionary.select("Elige la compresion a aplicar:", choices=choices).ask()
 
 
 def _render_clean_plan_summary(plans: List[CleanPlan]) -> List[CleanPlan]:

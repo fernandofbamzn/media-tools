@@ -6,6 +6,14 @@ from clibaseapp import clear_screen, console, dict_table, fmt, show_header, show
 from models.schemas import AuditSummary, OptimizePlan, Track
 
 
+def format_bytes(size: int) -> str:
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size < 1024.0:
+            return f"{size:3.1f} {unit}"
+        size /= 1024.0
+    return f"{size:.1f} PB"
+
+
 def format_bitrate(bitrate: int | None) -> str:
     if bitrate is None:
         return ""
@@ -91,8 +99,10 @@ def render_optimize_plan_summary(plans: list[OptimizePlan]) -> list[OptimizePlan
             executable_plans.append(plan)
             show_info(
                 f"{plan.media_file.path.name}: {plan.profile.title} | "
-                f"{plan.original_size} -> ~{plan.estimated_size} bytes"
+                f"{format_bytes(plan.original_size)} -> ~{format_bytes(plan.estimated_size)}"
             )
+            if plan.profile.tradeoffs:
+                show_info(f"   Coste: {plan.profile.tradeoffs}")
         else:
             show_warning(f"{plan.media_file.path.name}: omitido ({plan.skip_reason})")
     return executable_plans

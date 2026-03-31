@@ -118,6 +118,28 @@ class OptimizationProfile:
     audio_codec: str
     ffmpeg_args: List[str]
     estimated_ratio: float
+    description: str = ""
+    tradeoffs: str = ""
+
+
+@dataclass(frozen=True)
+class OptimizationRecommendation:
+    """Recomendacion estimada para un perfil de optimizacion."""
+
+    profile: OptimizationProfile
+    estimated_size: int
+    estimated_savings: int
+    estimated_ratio: float
+    recommended: bool = False
+
+
+@dataclass(frozen=True)
+class OptimizationRecommendationSet:
+    """Conjunto de recomendaciones basado en un archivo de referencia."""
+
+    reference_file: MediaFile
+    context: str
+    options: List[OptimizationRecommendation] = field(default_factory=list)
 
 
 @dataclass

@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 from clibaseapp.models import BrowseResult
-from models.schemas import ActionType, AuditReport, CleanPlan, MediaFile, OptimizeOutcome, Track, TrackAction
+from models.schemas import ActionType, AuditReport, CleanPlan, MediaFile, OptimizationProfile, OptimizeOutcome, Track, TrackAction
 from services.media_service import CleanResult, MediaService
 
 
@@ -171,3 +171,27 @@ def test_execute_optimize_plans_collects_outputs_skips_and_failures(tmp_path: Pa
     assert result.bytes_saved == 400
     assert result.outputs == [output]
     assert result.skipped == [plans[1]]
+
+
+def test_build_optimize_plans_from_media_files_accepts_dynamic_profile(tmp_path: Path) -> None:
+    service = MediaService()
+    media_file = MediaFile(
+        path=tmp_path / "one.mkv",
+        container="Matroska",
+        tracks=[Track(id=0, codec="H.264", language="und", type="video")],
+    )
+    media_file.path.write_bytes(b"x" * 100)
+    profile = OptimizationProfile(
+        id="custom-balanced",
+        title="Custom",
+        video_codec="libx265",
+        audio_codec="aac",
+        ffmpeg_args=["-c:v", "libx265"],
+        estimated_ratio=0.5,
+    )
+    service.optimize_service.build_plans = Mock(return_value=["plan"])
+
+    plans = service.build_optimize_plans_from_media_files([media_file], profile=profile)
+
+    assert plans == ["plan"]
+    service.optimize_service.build_plans.assert_called_once_with([media_file], profile)

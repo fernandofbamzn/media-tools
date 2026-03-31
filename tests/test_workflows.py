@@ -3,9 +3,20 @@ from unittest.mock import Mock
 
 from clibaseapp import ConfigManager
 from clibaseapp.models import BrowseResult
-from models.schemas import ActionType, AuditReport, AuditSummary, CleanPlan, MediaFile, Track, TrackAction
+from models.schemas import (
+    ActionType,
+    AuditReport,
+    AuditSummary,
+    CleanPlan,
+    MediaFile,
+    OptimizationProfile,
+    OptimizationRecommendation,
+    OptimizationRecommendationSet,
+    Track,
+    TrackAction,
+)
 from services.media_service import CleanFailure, CleanResult
-from services.optimize_service import DEFAULT_OPTIMIZATION_PROFILES
+from services.optimize_service import CUSTOM_OPTIMIZATION_PROFILE, DEFAULT_OPTIMIZATION_PROFILES
 from ui import workflows
 
 
@@ -310,6 +321,53 @@ def test_run_optimize_workflow_executes_and_can_replace_originals(monkeypatch, t
 
     service.build_optimize_plans_from_media_files.assert_called_once_with(
         audit_summary.report.detailed_files,
-        profile_id=profile.id,
+        profile=profile,
     )
     service.replace_originals_with_optimized.assert_called_once_with(result.outputs)
+
+
+def test_ask_optimization_profile_resolves_guided_custom_option(monkeypatch, tmp_path: Path) -> None:
+    service = Mock()
+    media_file = MediaFile(
+        path=tmp_path / "movie.mkv",
+        container="Matroska",
+        tracks=[Track(id=0, codec="H.264", language="und", type="video")],
+    )
+    media_file.path.write_bytes(b"x" * 1000)
+    custom_profile = OptimizationProfile(
+        id="custom-hevc-vaapi-balanced",
+        title="HEVC hardware equilibrado",
+        video_codec="hevc_vaapi",
+        audio_codec="aac",
+        ffmpeg_args=["-c:v", "hevc_vaapi"],
+        estimated_ratio=0.6,
+        tradeoffs="Ligera perdida y compatibilidad menor.",
+        description="Balanceado.",
+    )
+    recommendation_set = OptimizationRecommendationSet(
+        reference_file=media_file,
+        context="Referencia tomada del archivo seleccionado.",
+        options=[
+            OptimizationRecommendation(
+                profile=custom_profile,
+                estimated_size=600,
+                estimated_savings=400,
+                estimated_ratio=0.6,
+                recommended=True,
+            )
+        ],
+    )
+    root_prompt = Mock()
+    root_prompt.ask.return_value = CUSTOM_OPTIMIZATION_PROFILE
+    custom_prompt = Mock()
+    custom_prompt.ask.return_value = custom_profile
+
+    service.list_optimization_profiles.return_value = [DEFAULT_OPTIMIZATION_PROFILES[0], CUSTOM_OPTIMIZATION_PROFILE]
+    service.build_custom_optimization_recommendations.return_value = recommendation_set
+
+    monkeypatch.setattr(workflows.questionary, "select", Mock(side_effect=[root_prompt, custom_prompt]))
+
+    profile = workflows._ask_optimization_profile(service, [media_file])
+
+    assert profile == custom_profile
+    service.build_custom_optimization_recommendations.assert_called_once_with([media_file])

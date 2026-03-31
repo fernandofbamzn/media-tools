@@ -11,6 +11,7 @@ from models.schemas import (
     AuditSummary,
     CleanPlan,
     MediaFile,
+    OptimizationProfile,
     OptimizeFailure,
     OptimizeOutcome,
     OptimizePlan,
@@ -48,6 +49,10 @@ class MediaService:
 
     def list_optimization_profiles(self):
         return self.optimize_service.list_profiles()
+
+    def build_custom_optimization_recommendations(self, media_files: List[MediaFile]):
+        """Expone recomendaciones guiadas sin acoplar la UI al servicio interno."""
+        return self.optimize_service.build_custom_recommendations(media_files)
 
     def _resolve_files(self, result: BrowseResult) -> List[Path]:
         if result.selection_type == "file":
@@ -132,13 +137,14 @@ class MediaService:
     def build_optimize_plans_from_media_files(
         self,
         media_files: List[MediaFile],
+        profile: OptimizationProfile | None = None,
         profile_id: str = DEFAULT_OPTIMIZATION_PROFILES[0].id,
     ) -> List[OptimizePlan]:
         if not media_files:
             return []
 
-        profile = self.optimize_service.get_profile(profile_id)
-        return self.optimize_service.build_plans(media_files, profile)
+        selected_profile = profile or self.optimize_service.get_profile(profile_id)
+        return self.optimize_service.build_plans(media_files, selected_profile)
 
     def execute_optimize_plan(self, plan: OptimizePlan) -> OptimizeOutcome:
         return self.repo.execute_optimization(plan)

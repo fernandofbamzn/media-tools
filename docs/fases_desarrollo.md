@@ -49,7 +49,8 @@ Objetivos previstos:
 
 - transcodificación opcional,
 - perfiles configurables,
-- estimación de ahorro.
+- estimación de ahorro,
+- perfil custom guiado con recomendaciones y tradeoffs visibles.
 
 ### Fase 5. Automatización
 
